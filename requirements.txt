@@ -1,0 +1,9 @@
+geopandas
+pandas
+plotly
+shapely
+fiona
+pyproj
+folium
+branca
+streamlit_elements
