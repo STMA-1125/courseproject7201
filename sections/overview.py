@@ -365,14 +365,14 @@ def show_overview(selected_year, demographics, pyramid, pyramid_percent, regions
                         yoy_style = "background-color: #ffebee; color: #c62828;"
                     else:
                         yoy_style = "background-color: #f5f5f5; color: #616161;"
-                    yoy_style += " border-radius: 16px; padding: 2px 8px; font-size: 14px; font-weight: bold; display: inline-block; margin: 4px 0;"
+                    yoy_style += " border-radius: 12px; padding: 2px 8px; font-size: 13px; font-weight: bold; display: inline-block; margin-top: 6px;"
                     yoy_male_html = f"<div style='{yoy_style}'>{yoy_label}</div>"
                 
                 st.markdown(f"""
-                <div style="background-color: #add8e6; padding: 16px; border-radius: 4px; height: 160px; display: flex; flex-direction: column; justify-content: center; text-align: center;">
-                    <div style="font-weight: bold; color: #2c3e50; font-size: 16px;">Male</div>
-                    <div style="font-size: 30px; color: #2c3e50; margin: 4px 0;">{male_pct:.1f}%</div>
-                    <div style="font-size: 16px; color: #2c3e50; margin: 4px 0;">{male_pop:.1f}K</div>
+                <div style="background-color: #add8e6; padding: 12px; border-radius: 8px; min-height: 160px; display: flex; flex-direction: column; justify-content: center; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                    <div style="font-weight: bold; color: #2c3e50; font-size: 16px; margin-bottom: 4px;">Male</div>
+                    <div style="font-size: 26px; font-weight: 800; color: #2c3e50; margin: 2px 0;">{male_pct:.1f}%</div>
+                    <div style="font-size: 15px; color: #555; margin: 2px 0;">{male_pop:.1f}K</div>
                     {yoy_male_html}
                 </div>
                 """, unsafe_allow_html=True)
@@ -389,14 +389,14 @@ def show_overview(selected_year, demographics, pyramid, pyramid_percent, regions
                         yoy_style = "background-color: #ffebee; color: #c62828;"
                     else:
                         yoy_style = "background-color: #f5f5f5; color: #616161;"
-                    yoy_style += " border-radius: 16px; padding: 2px 8px; font-size: 14px; font-weight: bold; display: inline-block; margin: 4px 0;"
+                    yoy_style += " border-radius: 12px; padding: 2px 8px; font-size: 13px; font-weight: bold; display: inline-block; margin-top: 6px;"
                     yoy_female_html = f"<div style='{yoy_style}'>{yoy_label}</div>"
                 
                 st.markdown(f"""
-                <div style="background-color: #ffb6c1; padding: 16px; border-radius: 4px; height: 160px; display: flex; flex-direction: column; justify-content: center; text-align: center;">
-                    <div style="font-weight: bold; color: #2c3e50; font-size: 16px;">Female</div>
-                    <div style="font-size: 30px; color: #2c3e50; margin: 4px 0;">{female_pct:.1f}%</div>
-                    <div style="font-size: 16px; color: #2c3e50; margin: 4px 0;">{female_pop:.1f}K</div>
+                <div style="background-color: #ffb6c1; padding: 12px; border-radius: 8px; min-height: 160px; display: flex; flex-direction: column; justify-content: center; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                    <div style="font-weight: bold; color: #2c3e50; font-size: 16px; margin-bottom: 4px;">Female</div>
+                    <div style="font-size: 26px; font-weight: 800; color: #2c3e50; margin: 2px 0;">{female_pct:.1f}%</div>
+                    <div style="font-size: 15px; color: #555; margin: 2px 0;">{female_pop:.1f}K</div>
                     {yoy_female_html}
                 </div>
                 """, unsafe_allow_html=True)

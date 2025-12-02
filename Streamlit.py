@@ -104,7 +104,6 @@ st.markdown("""
     /* Enhanced sidebar with decorative pattern */
     [data-testid="stSidebar"] {
         background: linear-gradient(180deg, #1e3a5f 0%, #2c5aa0 50%, #1e3a5f 100%);
-        width: 280px !important;
         position: relative;
     }
     [data-testid="stSidebar"]::before {
@@ -152,7 +151,7 @@ st.markdown("""
         color: white;
     }
     
-    /* Enhanced metric cards with icon decorations */
+    /* Enhanced metric cards - removed transitions to prevent layout shifts */
     .metric-card {
         background: white;
         border-radius: 16px;
@@ -161,7 +160,6 @@ st.markdown("""
         margin-bottom: 8px;
         border: 1px solid rgba(102, 126, 234, 0.1);
         border-left: 4px solid #667eea;
-        transition: all 0.3s ease;
         position: relative;
         overflow: hidden;
     }
@@ -177,7 +175,6 @@ st.markdown("""
     }
     .metric-card:hover {
         box-shadow: 0 8px 25px rgba(102, 126, 234, 0.25);
-        transform: translateY(-2px);
         border-left-color: #764ba2;
     }
     
@@ -242,7 +239,7 @@ st.markdown("""
         filter: blur(4px);
     }
     
-    /* Enhanced statistics boxes */
+    /* Enhanced statistics boxes - removed transitions */
     .stat-box {
         background: linear-gradient(135deg, rgba(102, 126, 234, 0.08) 0%, rgba(118, 75, 162, 0.08) 100%);
         border-left: 5px solid #667eea;
@@ -250,8 +247,8 @@ st.markdown("""
         padding: 14px;
         margin: 8px 0;
         box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);
-        transition: all 0.3s ease;
         backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px); /* Safari support */
         position: relative;
     }
     .stat-box::before {
@@ -263,19 +260,16 @@ st.markdown("""
         color: #667eea;
         font-size: 1.2em;
         opacity: 0;
-        transition: all 0.3s ease;
     }
     .stat-box:hover {
         border-left-color: #764ba2;
         box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
-        padding-left: 30px;
     }
     .stat-box:hover::before {
         opacity: 1;
-        left: 16px;
     }
     
-    /* Enhanced badge styling with icons */
+    /* Enhanced badge styling - removed transitions */
     .badge {
         display: inline-block;
         padding: 5px 14px;
@@ -284,10 +278,8 @@ st.markdown("""
         font-weight: 600;
         margin: 4px 4px 4px 0;
         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        transition: all 0.2s ease;
     }
     .badge:hover {
-        transform: translateY(-1px);
         box-shadow: 0 3px 6px rgba(0,0,0,0.15);
     }
     .badge-primary {
@@ -369,9 +361,17 @@ st.markdown("""
         box-shadow: 0 2px 6px rgba(102, 126, 234, 0.3);
     }
     
-    /* Plotly chart containers - reduce margins */
+    /* Plotly chart containers - no transitions, no margins */
     .js-plotly-plot {
         margin-bottom: 0 !important;
+        transition: none !important;
+        -webkit-transition: none !important;
+    }
+    
+    /* Disable all transitions on Plotly elements */
+    .js-plotly-plot * {
+        transition: none !important;
+        -webkit-transition: none !important;
     }
     
     /* Streamlit columns - reduce gaps */
@@ -422,7 +422,7 @@ st.sidebar.markdown('<p style="margin-bottom: 0px;"><strong>Click a button below
 button_style = """
     <style>
     [data-testid="stSidebar"] [data-testid="stButton"] {
-        margin: 1px 0 !important;
+        margin: 4px 0 !important;
     }
     [data-testid="stSidebar"] [data-testid="stButton"] button {
         width: 100%;
@@ -432,23 +432,17 @@ button_style = """
         font-size: 14px;
         font-weight: 600;
         cursor: pointer;
-        transition: all 0.3s ease;
         text-align: left;
         background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #5f3d8e 100%);
         color: white !important;
     }
     [data-testid="stSidebar"] [data-testid="stButton"] button:hover {
-        transform: translateY(-1px);
         box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-    }
-    [data-testid="stSidebar"] [data-testid="stButton"] button:active {
-        transform: scale(0.98);
     }
     /* Highlight active button */
     [data-testid="stSidebar"] [data-testid="stButton"] button[kind="primary"] {
         border-color: rgba(255,255,255,0.8) !important;
         box-shadow: 0 0 15px rgba(255,255,255, 0.4) !important;
-        transform: scale(1.02) !important;
         font-weight: 700 !important;
     }
     </style>
@@ -457,15 +451,15 @@ button_style = """
 st.sidebar.markdown(button_style, unsafe_allow_html=True)
 
 # Three functional buttons
-if st.sidebar.button("Overview", key="nav_overview", width='stretch', type="primary" if st.session_state.viz_type == "Overview" else "secondary"):
+if st.sidebar.button("Overview", key="nav_overview", use_container_width=True, type="primary" if st.session_state.viz_type == "Overview" else "secondary"):
     st.session_state.viz_type = "Overview"
     st.rerun()
 
-if st.sidebar.button("Population Pyramid", key="nav_pyramid", width='stretch', type="primary" if st.session_state.viz_type == "Population Pyramid" else "secondary"):
+if st.sidebar.button("Population Pyramid", key="nav_pyramid", use_container_width=True, type="primary" if st.session_state.viz_type == "Population Pyramid" else "secondary"):
     st.session_state.viz_type = "Population Pyramid"
     st.rerun()
 
-if st.sidebar.button("Demographic Analysis", key="nav_trends", width='stretch', type="primary" if st.session_state.viz_type == "Demographic Analysis" else "secondary"):
+if st.sidebar.button("Demographic Analysis", key="nav_trends", use_container_width=True, type="primary" if st.session_state.viz_type == "Demographic Analysis" else "secondary"):
     st.session_state.viz_type = "Demographic Analysis"
     st.rerun()
 
