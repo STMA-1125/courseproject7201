@@ -39,7 +39,7 @@ def pivot_pyramid_df(df: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]:
     return long, age_order
 
 
-def build_pyramid_figure(long: pd.DataFrame, age_order: List[str]) -> go.Figure:
+def build_pyramid_figure(long: pd.DataFrame, age_order: List[str], start_mode: str = 'last') -> go.Figure:
     """Build and return the animated population pyramid with clean hover."""
     color_map = {"Male": "#5DADE2", "Female": "#F1948A"}
     xmax = 15.0
@@ -56,7 +56,8 @@ def build_pyramid_figure(long: pd.DataFrame, age_order: List[str]) -> go.Figure:
         color_discrete_map=color_map,
         title="Macao Population Pyramid (1999–2024)",
         labels={"Population_Neg": "Percentage of population (%)", "Age Group": "Age Group"},
-        height=700,
+        width=1000,
+        height=800,
         custom_data=["Population_Abs"]  # Pass absolute values for hover
     )
 
@@ -96,7 +97,19 @@ def build_pyramid_figure(long: pd.DataFrame, age_order: List[str]) -> go.Figure:
 
     # Add year annotation
     years = sorted(long["Year"].unique())
-    initial_year = years[0] if len(years) > 0 else ""
+    # start_mode controls how the chart appears on initial render in the page:
+    #  - 'last': show the latest year's frame (useful for snapshot view of latest data)
+    #  - 'off' : disable startup animation and show an empty/off view until the user plays
+    #  - 'first' : shows the first year and is the default behavior of many animations
+    # You can change this when calling the function from a UI (e.g., Streamlit) by
+    # passing start_mode='off' to prevent any autoplay behavior.
+    # The initial_year annotation is controlled by start_mode (last, off, first)
+    if start_mode == 'last':
+        initial_year = years[-1] if len(years) > 0 else ""
+    elif start_mode == 'off':
+        initial_year = years[0] if len(years) > 0 else ""  # Show first year when 'off'
+    else:
+        initial_year = years[0] if len(years) > 0 else ""
 
     def create_year_annotation(year_text):
         return dict(
@@ -121,6 +134,8 @@ def build_pyramid_figure(long: pd.DataFrame, age_order: List[str]) -> go.Figure:
                 fyear = fr.name
             fr.layout = fr.layout or {}
             fr.layout.annotations = [create_year_annotation(fyear)]
+            fr.layout.xaxis = dict(range=[-xmax, xmax])
+            fr.layout.yaxis = dict(autorange="reversed")
 
     # Set symmetric ticks and labels
     step = 2.5
@@ -138,7 +153,7 @@ def build_pyramid_figure(long: pd.DataFrame, age_order: List[str]) -> go.Figure:
         yaxis=dict(autorange="reversed"),
         bargap=0.05,
         legend_title_text="Sex",
-        margin=dict(l=80, r=40, t=80, b=160),
+        margin=dict(l=80, r=40, t=80, b=300),
     )
 
     # Position slider and adjust play/pause buttons
@@ -146,7 +161,7 @@ def build_pyramid_figure(long: pd.DataFrame, age_order: List[str]) -> go.Figure:
         s = fig.layout.sliders[0]
         s.len = 0.80
         s.x = 0.5 - s.len/2
-        s.y = -0.12
+        s.y = -0.26
         s.currentvalue.prefix = "Year: "
 
         years = sorted(long["Year"].unique())
@@ -160,8 +175,27 @@ def build_pyramid_figure(long: pd.DataFrame, age_order: List[str]) -> go.Figure:
         um.yanchor = "middle"
         um.direction = "left"
 
+        # Compute dropdown position based on the end of the slider (s.x + s.len)
+        dropdown_x = s.x + s.len
+        dropdown_y = s.y + 0.02
+
     if fig.layout.updatemenus:
+        # Clear any built-in updatemenus (including default Play/Pause)
         fig.layout.updatemenus = []
+
+    # Alternative: ensure transition and animation defaults won't auto-play
+    fig.layout.transition = fig.layout.transition or {}
+    fig.layout.transition.duration = 0
+
+    # Set initial slider to last year as a fallback (keeps the most recent snapshot visible)
+    if fig.layout.sliders:
+        # Choose startup behavior.
+        if start_mode == 'last':
+            fig.layout.sliders[0].active = len(fig.frames) - 1
+        elif start_mode == 'off':
+            fig.layout.sliders[0].active = 0
+        else:
+            fig.layout.sliders[0].active = 0
 
     # Add line traces for each year
     for year in years:
@@ -210,33 +244,115 @@ def build_pyramid_figure(long: pd.DataFrame, age_order: List[str]) -> go.Figure:
     off_visible = [True, True] + [False] * (2 * num_years)
     year_options.insert(0, dict(label='Off', method='restyle', args=[{'visible': off_visible}]))
 
+    # --- Add Play/Pause/Stop controls ---
+    # Play button
+    play_button = dict(
+        label="Play",
+        method="animate",
+        args=[
+            None,
+            {
+                "frame": {"duration": 800, "redraw": True},
+                "transition": {"duration": 300},
+                "fromcurrent": True,
+            },
+        ],
+    )
+
+    # Pause button (immediate, stops animation by setting frame duration to 0)
+    pause_button = dict(
+        label="Pause",
+        method="animate",
+        args=[[None], {"frame": {"duration": 0, "redraw": False}, "mode": "immediate"}],
+    )
+
+    # Stop button: switch to 'Off' view by setting visibility to the Off option
+    stop_button = dict(
+        label="Stop",
+        method="restyle",
+        args=[{"visible": off_visible}],
+    )
+
+    # Position controls slightly above the year slider; use icons for buttons
+    # create copies to avoid overriding the original dicts
+    play_btn = play_button.copy()
+    play_btn['label'] = '▶'
+    pause_btn = pause_button.copy()
+    pause_btn['label'] = '⏸'
+    # Stop needs to reset to first year (using animate to jump to the first frame)
+    stop_btn = stop_button.copy()
+    stop_btn['label'] = '⏹'
+    if years:
+        stop_btn = dict(
+            label='⏹',
+            method='animate',
+            args=[[str(years[0])], {"frame": {"duration": 0, "redraw": True}, "mode": "immediate"}],
+        )
+    # Position controls to left side of the slider. We'll base it on s.x so it sits just to the left
+    # of the slider start. If slider is defined, set x accordingly.
+    os_slider_x = 0.5
+    if fig.layout.sliders:
+        os_slider_x = fig.layout.sliders[0].x
+
+    # Align controls bottom to slightly above the slider by using yanchor='bottom'
+    # Place controls just above the "Year: XXXX" label (slightly above the slider)
+    if fig.layout.sliders:
+        controls_y = s.y + 0.008  # keep buttons just barely above the slider handle
+    else:
+        controls_y = -0.09
+
+    controls_menu = dict(
+        type="buttons",
+        direction="left",
+        showactive=False,
+        buttons=[play_btn, pause_btn, stop_btn],
+        x=max(0.02, os_slider_x - 0.02),
+        y=controls_y,
+        xanchor='left',
+        yanchor='bottom',
+        font=dict(size=16)
+    )
+
+    # Year dropdown + custom controls
+    # Position dropdown below the legend (legend is at top-right by default)
+    # Place the dropdown above the right end of the slider if slider present,
+    # otherwise keep the default bottom-right placement.
+    dropdown_x = locals().get('dropdown_x', 0.92)
+    dropdown_y = locals().get('dropdown_y', -0.15)
     fig.update_layout(
         updatemenus=[
             dict(
                 active=0,
                 buttons=year_options,
-                x=0.92,
-                y=-0.15,
-                xanchor='left',
-                yanchor='middle',
+                x=dropdown_x,
+                y=dropdown_y,
+                xanchor='center',
+                yanchor='bottom',
                 direction='down'
-            )
+                ,
+                font=dict(size=16)
+            ),
+            controls_menu,
         ]
     )
 
-    # Add label annotation
+    # Add label annotation above the dropdown
     current_annotations = list(fig.layout.annotations) if fig.layout.annotations else []
+    # Place the label right above the dropdown (if computed from slider, use that)
+    label_x = locals().get('dropdown_x', 0.92)
+    # Place the label a bit higher above the dropdown to avoid overlap
+    label_y = locals().get('dropdown_y', -0.15) + 0.10
     current_annotations.append(
         dict(
             text="Select a year for comparison",
-            x=0.92,
-            y=-0.1,
+            x=label_x,
+            y=label_y,
             xref="paper",
             yref="paper",
-            xanchor="left",
+            xanchor="center",
             yanchor="bottom",
             showarrow=False,
-            font=dict(size=12, color="black")
+            font=dict(size=16, color="black")
         )
     )
     fig.update_layout(annotations=current_annotations)
