@@ -52,7 +52,10 @@ courseproject7201/
 ├── data/                    # Data directory
 │   ├── macaushape.geojson   # Geospatial boundary data
 │   ├── macao-shapefile/     # Shapefile components
-│   └── processed/           # Processed CSV data files
+│   ├── processed/           # Processed CSV data files
+│   └── raw/                 # Raw data and preprocessing scripts
+│       ├── dsec_dataset.csv # Raw time-series CSV from DSEC
+│       └── time-series_preprocessing.py  # Script to clean and generate `processed/` CSVs
 ├── graphs/                  # Generated visualizations and HTML files
 ├── modules/                 # Reusable modules
 │   ├── data_loader.py       # Data loading utilities
