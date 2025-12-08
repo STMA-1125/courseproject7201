@@ -1,8 +1,16 @@
+"""Calculation utilities for demographic metrics.
+
+Provides functions for computing dependency ratios, median ages,
+and formatting display values.
+"""
 import pandas as pd
+import numpy as np
+import logging
+
+# Configure logging
+logger = logging.getLogger(__name__)
 
 def format_yoy_label(value, unit='', decimals=1, use_sign=False):
-    """Return label like '↑0.2%' or 'Δ0.0 yrs' rounded to decimals.
-    If value is None or NaN, return 'YoY change'"""
     try:
         if value is None or (isinstance(value, float) and pd.isna(value)):
             return "YoY change"
@@ -16,7 +24,6 @@ def format_yoy_label(value, unit='', decimals=1, use_sign=False):
             return f"{sign}{num}{unit}"
         else:
             arrow = 'Δ' if val == 0 else ('↑' if val > 0 else '↓')
-            # ensure no leading + sign for positive; arrow covers sign
             num = f"{abs(val):.{decimals}f}"
             return f"{arrow}{num}{unit}"
     except Exception:
@@ -50,17 +57,6 @@ def compute_dependency_ratio(row):
         return None
 
 def compute_median_age(row):
-    """Approximate median age via interpolation over age groups.
-
-    Age groups assumed:
-    - Below Age 15: 0-14
-    - Age 15-24: 15-24
-    - Age 25-34: 25-34
-    - Age 35-44: 35-44
-    - Age 45-54: 45-54
-    - Age 55-64: 55-64
-    - Age 65 and above: 65-100 (upper-bound assumed 100)
-    """
     try:
         bands = [
             (0, 14, row.get('Below Age 15', 0) or 0),
@@ -91,3 +87,65 @@ def compute_median_age(row):
         return round((last[0] + last[1]) / 2.0, 1)
     except Exception:
         return None
+
+def compute_dependency_ratio_vectorized(df):
+    try:
+        young = df['Below Age 15'].fillna(0)
+        old = df['Age 65 and above'].fillna(0)
+        
+        # Sum working age population (15-64)
+        working_cols = ['Age 15-24', 'Age 25-34', 'Age 35-44', 'Age 45-54', 'Age 55-64']
+        working = df[working_cols].fillna(0).sum(axis=1)
+        
+        # Avoid division by zero
+        ratio = ((young + old) / working.replace(0, np.nan)) * 100
+        return ratio
+    except Exception as e:
+        # Fallback to row-wise computation if vectorization fails
+        return df.apply(compute_dependency_ratio, axis=1)
+
+def compute_median_age_vectorized(df):
+    try:
+        bands = [
+            (0, 14, 'Below Age 15'),
+            (15, 24, 'Age 15-24'),
+            (25, 34, 'Age 25-34'),
+            (35, 44, 'Age 35-44'),
+            (45, 54, 'Age 45-54'),
+            (55, 64, 'Age 55-64'),
+            (65, 100, 'Age 65 and above'),
+        ]
+        
+        median_ages = []
+        for idx, row in df.iterrows():
+            band_data = [(lower, upper, row.get(col, 0) or 0) for lower, upper, col in bands]
+            total = sum([b[2] for b in band_data])
+            
+            if total <= 0:
+                median_ages.append(None)
+                continue
+                
+            median_pos = total / 2.0
+            cum = 0.0
+            found = False
+            
+            for lower, upper, count in band_data:
+                if count == 0:
+                    continue
+                if cum + count >= median_pos:
+                    within = median_pos - cum
+                    frac = within / count
+                    age = lower + frac * (upper - lower)
+                    median_ages.append(round(age, 1))
+                    found = True
+                    break
+                cum += count
+            
+            if not found:
+                last = band_data[-1]
+                median_ages.append(round((last[0] + last[1]) / 2.0, 1))
+        
+        return pd.Series(median_ages, index=df.index)
+    except Exception as e:
+        # Fallback to row-wise computation
+        return df.apply(compute_median_age, axis=1)

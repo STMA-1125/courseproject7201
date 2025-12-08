@@ -1,10 +1,23 @@
-import streamlit as st
-import os
+"""UI component utilities for Macao Demographics Dashboard.
+
+Provides reusable UI components for headers, sections, and decorative elements.
+"""
 import base64
+import os
+import logging
 
-def section_header(title, emoji="📊"):
-    """Reusable section header with underline."""
+import streamlit as st
 
+# Configure logging
+logger = logging.getLogger(__name__)
+
+def section_header(title: str, emoji: str = "📊") -> None:
+    """Render a styled section header.
+    
+    Args:
+        title: The header text
+        emoji: Optional emoji icon (default: 📊)
+    """
     st.markdown(f"""
     <div style="margin-bottom: 14px; margin-top: 8px;">
         <div class="section-header">
@@ -23,7 +36,6 @@ def decorative_header(title, subtitle="", badges=None, icon=None, project_root=N
             badges_html += f"<span style='background: rgba(255,255,255,0.15); padding: 4px 12px; border-radius: 12px; backdrop-filter: blur(5px);'>{badge}</span>"
         badges_html += "</div>"
 
-    # Determine icon source: use icon parameter, prefer image under /images/, otherwise embed default SVG
     default_icon_svg_base64 = (
         "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIg"
         "eG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiByeD0iNCIgZmlsbD0iIzRhNTU2OCIvPgo8cmVjdCB4PSI0IiB5PSI2IiB3aWR0aD0iMjQiIGhlaWdodD0iMTYiIHJ4PSIyIiBmaWxsPSJ3aGl0ZSIvPgo8cmVjdCB4PSI2IiB5PSI4IiB3aWR0aD0iMjAiIGhlaWdodD0iMyIgZmlsbD0iIzY2N2VlYSIvPgo8cmVjdCB4PSI2IiB5PSIxMyIgd2lkdGg9IjEyIiBoZWlnaHQ9IjIiIGZpbGw9IiM2NjdlZWEiIG9wYWNpdHk9IjAuNyIvPgo8cmVjdCB4PSI2IiB5PSIxNyIgd2lkdGg9IjE2IiBoZWlnaHQ9IjIiIGZpbGw9IiM2NjdlZWEiIG9wYWNpdHk9IjAuNSIvPgo8Y2lyY2xlIGN4PSIyMiIgY3k9IjE4IiByPSIxLjUiIGZpbGw9IiM2NjdlZWEiLz4KPGNpcmNsZSBjeD0iMjUiIGN5PSIxOCIgcj0iMS41IiBmaWxsPSIjNjY3ZWVhIi8+CjxjaXJjbGUgY3g9IjIyIiBjeT0iMjEiIHI9IjEuNSIgZmlsbD0iIzY2N2VlYSIvPgo8L3N2Zz4="
@@ -31,17 +43,13 @@ def decorative_header(title, subtitle="", badges=None, icon=None, project_root=N
 
     icon_src = None
     try:
-        # If project_root is provided, prefer images under project_root/images
         _base_dir = os.path.dirname(os.path.abspath(__file__))
-        # Project-level images directory (fallback guess if project_root not supplied)
         project_images_dir = None
         if project_root:
             project_images_dir = os.path.join(project_root, 'images')
         else:
-            # modules package is inside courseproject7201/modules; guess parent images dir
             project_images_dir = os.path.normpath(os.path.join(_base_dir, os.pardir, 'images'))
 
-        # Candidate list based on icon param: if icon specified as bare name, check png/svg; if full path or data:, use directly.
         if icon is not None and isinstance(icon, str):
             if icon.startswith('data:'):
                 icon_src = icon
@@ -62,7 +70,6 @@ def decorative_header(title, subtitle="", badges=None, icon=None, project_root=N
                         mime = 'image/png' if ext in ['.png'] else 'image/svg+xml' if ext == '.svg' else 'image/png'
                         icon_src = f"data:{mime};base64,{base64.b64encode(_d).decode('utf-8')}"
                         break
-        # Last resort: try to find an analysis.png or dashboard icon under project_images_dir
         if icon_src is None and project_images_dir:
             for fallback in ['dashboard.svg', 'dashboard.png', 'analysis.svg', 'analysis.png']:
                 candidate_path = os.path.join(project_images_dir, fallback)
@@ -75,19 +82,15 @@ def decorative_header(title, subtitle="", badges=None, icon=None, project_root=N
                     break
     except Exception:
         icon_src = None
-    # fallback to embedded default
     if not icon_src:
         icon_src = default_icon_svg_base64
 
     # Allow different icon presentations (inline or rounded circle background)
     if icon_bg == 'circle':
-        # Default outer circle size is 48px if not provided in inputs
         if not icon_bg_size:
             icon_bg_size = 48
-        # Default inner icon size (image height on the circle) is 28 if not provided
         if not icon_inner_size:
             icon_inner_size = 28
-        # Default margin between icon and text should match backup: 12px
         if not icon_margin_right:
             icon_margin_right = 12
         icon_html = (
@@ -96,7 +99,6 @@ def decorative_header(title, subtitle="", badges=None, icon=None, project_root=N
             f"</span>"
         )
     else:
-        # Default margin for inline icons: 10px
         if not icon_margin_right:
             icon_margin_right = 10
         icon_html = f"<img src='{icon_src}' width='{icon_size}' height='{icon_size}' style='vertical-align: middle; margin-right: {icon_margin_right}px;' alt='icon'/>"

@@ -1,8 +1,9 @@
-"""Choropleth builder module for Macao demographics - Enhanced Edition"""
+"""Choropleth builder module for Macao demographics visualization."""
 
 import json
 from pathlib import Path
 from typing import Tuple, Dict, Optional, List
+from functools import lru_cache
 
 import pandas as pd
 import plotly.graph_objects as go
@@ -19,7 +20,6 @@ except ImportError as e:
 
 
 ROOT = Path(__file__).resolve().parent
-# project root (one level up from graphs/) so the module can find data/ at repo root
 PROJECT_ROOT = ROOT.parent
 
 # Search common locations for shapefiles and geojsons: graphs/data/ and project_root/data/
@@ -34,7 +34,6 @@ GEOJSON_PATH = next(
     (p for p in [ROOT / "data" / "macaushape.geojson", PROJECT_ROOT / "data" / "macaushape.geojson"] if p.exists()),
     ROOT / "data" / "macaushape.geojson"
 )
-
 
 def find_region_column(gdf: gpd.GeoDataFrame) -> Optional[str]:
     """Find the region name column in the GeoDataFrame."""
@@ -91,13 +90,12 @@ def load_geojson() -> gpd.GeoDataFrame:
         raise RuntimeError(f"❌ Failed to read geojson: {e}")
     
     # Filter to main administrative regions: Macau, Taipa, Coloane
-    # Be specific to avoid matching boundary segments
     macau_filter = (gdf['name'] == '澳門 Macau') | (gdf['name:en'] == 'Macau')
     taipa_filter = (gdf['name'] == '氹仔 Taipa') | (gdf['name:en'] == 'Taipa')
     coloane_filter = (gdf['name'] == '路環 Coloane') | (gdf['name:en'] == 'Coloane')
     gdf = gdf[macau_filter | taipa_filter | coloane_filter]
     
-    # Clean and validate
+    # Validate
     print(f"✅ Loaded {len(gdf)} region polygons from GeoJSON")
     
     # Remove empty/none geometries
@@ -112,88 +110,13 @@ def load_geojson() -> gpd.GeoDataFrame:
         gdf = gdf.set_crs(epsg=4326)
     
     return gdf
-    
-    # Clean and validate
-    print(f"✅ Loaded {len(gdf)} administrative/island features from GeoJSON")
-    
-    # Remove empty/none geometries
-    initial_len = len(gdf)
-    gdf = gdf[~gdf.geometry.isna() & ~gdf.geometry.is_empty]
-    if len(gdf) < initial_len:
-        print(f"🗑️ Removed {initial_len - len(gdf)} empty geometries")
-    
-    # Ensure CRS
-    if gdf.crs is None:
-        print("⚠️ CRS not set, defaulting to EPSG:4326 (WGS84)")
-        gdf = gdf.set_crs(epsg=4326)
-    
-    return gdf
 
 
-def _fallback_voronoi_split(gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
-    """Advanced Voronoi fallback with manual region verification."""
-    print("\n🔄 Using Voronoi fallback method...")
-    
-    if gdf.crs is None:
-        gdf = gdf.set_crs(epsg=4326)
-    
-    gdf_4326 = gdf.to_crs(epsg=4326) if gdf.crs.to_epsg() != 4326 else gdf
-    
-    # Get Macao boundary
-    macao_poly = gdf_4326.geometry.unary_union
-    if macao_poly.is_empty:
-        raise RuntimeError("Empty geometry union")
-    
-    macao_proj = gpd.GeoSeries([macao_poly], crs=gdf_4326.crs).to_crs(epsg=3857).iloc[0]
-    
-    # === CORRECTED SEED POINTS ===
-    seeds = {
-        "Macao Peninsula": (22.1987, 113.5439),
-        "Taipa": (22.1568, 113.5637),
-        "Coloane": (22.1135, 113.5530),
-    }
-    
-    try:
-        seed_points = []
-        for name, (lat, lon) in seeds.items():
-            p = Point(lon, lat)
-            p_proj = gpd.GeoSeries([p], crs=4326).to_crs(epsg=3857).iloc[0]
-            seed_points.append(p_proj)
-        
-        # Create Voronoi diagram
-        multip = geom.MultiPoint(seed_points)
-        envelope = macao_proj.buffer(5000)  # Large envelope
-        vor = ops.voronoi_diagram(multip, envelope=envelope)
-        vor_polys = list(vor.geoms) if hasattr(vor, 'geoms') else [vor]
-        
-        # Clip Voronoi cells to Macao boundary
-        records = []
-        names = list(seeds.keys())
-        
-        for i, seed in enumerate(seed_points):
-            # Find cell containing this seed
-            cell = min(vor_polys, key=lambda vp: vp.distance(seed))
-            clipped = cell.intersection(macao_proj)
-            
-            if not clipped.is_empty:
-                records.append({"region_name": names[i], "geometry": clipped})
-        
-        if not records:
-            raise RuntimeError("Voronoi produced no valid regions")
-        
-        out = gpd.GeoDataFrame(records, geometry='geometry', crs='EPSG:3857')
-        out = out.to_crs(gdf_4326.crs)
-        
-        print(f"✅ Voronoi fallback created {len(out)} regions: {out['region_name'].tolist()}")
-        return out.reset_index(drop=True)
-        
-    except Exception as e:
-        print(f"❌ Voronoi fallback failed: {e}")
-        raise RuntimeError(f"Failed to create regions from shapefile: {e}")
-
-
-def prepare_geospatial_data(use_manual_regions=False) -> Tuple[gpd.GeoDataFrame, Dict]:
-    """Load and prepare geospatial data for choropleth with whole Macau base layer and regions from GeoJSON."""
+@lru_cache(maxsize=1)
+def prepare_geospatial_data() -> Tuple[gpd.GeoDataFrame, Dict]:
+    """Load and prepare geospatial data for choropleth with whole Macau base layer and regions from GeoJSON.
+    Cached with LRU cache to avoid expensive geometry operations on every render.
+    """
     print("\n" + "="*60)
     print("PREPARING GEOSPATIAL DATA")
     print("="*60)
@@ -240,7 +163,7 @@ def prepare_geospatial_data(use_manual_regions=False) -> Tuple[gpd.GeoDataFrame,
     # Derive peninsula by subtracting Taipa and Coloane from complete boundary
     print("🔧 Deriving peninsula polygon from shapefile...")
     
-    # Clean geometries using buffer(0) to fix any topology issues
+    # Clean geometries using buffer(0) 
     macau_boundary_clean = macau_boundary.buffer(0)
     taipa_geom_clean = taipa_geom.buffer(0)
     coloane_geom_clean = coloane_geom.buffer(0)
@@ -257,7 +180,7 @@ def prepare_geospatial_data(use_manual_regions=False) -> Tuple[gpd.GeoDataFrame,
         significant_parts = [p for p in parts if p.area > total_area * 0.01]
         
         print(f"   Filtered to {len(significant_parts)} significant parts")
-        for i, part in enumerate(significant_parts[:5]):  # Show first 5
+        for i, part in enumerate(significant_parts[:5]): 
             print(f"     Part {i}: area = {part.area:.6f}")
         
         # Take the largest part as the peninsula
@@ -463,7 +386,6 @@ def build_choropleth_figure(
     vmin = max(0, global_vmin)
     vmax = global_vmax
     
-    # === CONTINUOUS WHITE -> DARK RED COLOR SCALE ===
     # Create a discrete color scale with one step per 1 km² (0..60)
     def _interpolate_rgb(start_rgb, end_rgb, t):
         return tuple(int(start + (end - start) * t) for start, end in zip(start_rgb, end_rgb))

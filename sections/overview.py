@@ -5,10 +5,11 @@ import plotly.graph_objects as go
 import base64
 import os
 from streamlit_elements import elements, mui, html
-from utils.calculations import format_yoy_label, get_yoy_style
-from modules.ui_components import section_header, decorative_header
 
-# Import choropleth builder
+from modules.ui_components import section_header, decorative_header
+from utils.calculations import format_yoy_label, get_yoy_style
+
+# Import choropleth builder (optional dependency)
 try:
     from graphs.choropleth_builder import build_choropleth_figure
 except ImportError:
@@ -55,7 +56,6 @@ def show_overview(selected_year, demographics, pyramid, pyramid_percent, regions
             non_resident_workers = current_data['Non-resident workers total'] if pd.notna(current_data.get('Non-resident workers total')) else 0
             annual_growth = current_data['Annual growth rate'] if pd.notna(current_data.get('Annual growth rate')) else 0
             natural_growth = current_data['Rate of natural increase'] if pd.notna(current_data.get('Rate of natural increase')) else 0
-            # New derived metrics
             dependency = current_data.get('Dependency ratio', None)
             median_age = current_data.get('Median age', None)
 
@@ -64,10 +64,8 @@ def show_overview(selected_year, demographics, pyramid, pyramid_percent, regions
             if prev_data is not None and pd.notna(prev_data.get('Total population')) and prev_data['Total population'] > 0:
                 yoy_total_pop = ((total_pop - prev_data['Total population']) / prev_data['Total population']) * 100
 
-            # For density, compute absolute difference in people/km² (no percentage)
             yoy_density = None
             if prev_data is not None and pd.notna(prev_data.get('Population density')):
-                # Absolute change (current density - previous density)
                 yoy_density = density - prev_data['Population density']
 
             yoy_workers = None
@@ -246,7 +244,7 @@ def show_overview(selected_year, demographics, pyramid, pyramid_percent, regions
         # Calculate YoY changes for gender distribution
         yoy_male = None
         yoy_female = None
-        if selected_year > 1999:  # Need previous year data
+        if selected_year > 1999:
             prev_year = selected_year - 1
             prev_data = demographics[demographics['Year'] == prev_year]
             if not prev_data.empty:
@@ -264,7 +262,6 @@ def show_overview(selected_year, demographics, pyramid, pyramid_percent, regions
             male_pct = (male_pop / total_pop) * 100
             female_pct = (female_pop / total_pop) * 100
 
-            # Create simple gender distribution chart without geometric figures
             fig_gender = go.Figure()
 
             # Toilet/restroom gender images (or fallback to emoji icons)
@@ -282,7 +279,7 @@ def show_overview(selected_year, demographics, pyramid, pyramid_percent, regions
                 except Exception:
                     return None
 
-            # Determine custom image paths (user-provided photos)
+            # Determine custom image paths 
             # Use project_root to find images
             male_custom_path = project_root / 'images' / 'male_custom.png'
             female_custom_path = project_root / 'images' / 'female_custom.png'
@@ -780,14 +777,14 @@ def show_overview(selected_year, demographics, pyramid, pyramid_percent, regions
             y=chart_df['Child Dependency'],
             name='Child dependency',
             marker_color='#ff7f0e',
-            hovertemplate='Child dependency: %{y:.1f}<extra></extra>'
+            hovertemplate='Child dependency: %{y:.1f}%<extra></extra>'
         ))
         fig_dependency.add_trace(go.Bar(
             x=chart_df['Year'],
             y=chart_df['Senior Dependency'],
             name='Senior dependency',
             marker_color='#bdbdbd',
-            hovertemplate='Senior dependency: %{y:.1f}<extra></extra>'
+            hovertemplate='Senior dependency: %{y:.1f}%<extra></extra>'
         ))
 
         # Line trace for total dependency (same scale)
@@ -798,7 +795,7 @@ def show_overview(selected_year, demographics, pyramid, pyramid_percent, regions
             mode='lines+markers',
             line=dict(color='#2a6fda', width=2),
             marker=dict(size=7),
-            hovertemplate='Total dependency: %{y:.1f}<extra></extra>'
+            hovertemplate='Total dependency: %{y:.1f}%<extra></extra>'
         ))
 
         fig_dependency.update_layout(
@@ -885,7 +882,7 @@ def show_overview(selected_year, demographics, pyramid, pyramid_percent, regions
         mode='lines+markers',
         line=dict(color='#2980b9', width=3),
         marker=dict(size=6),
-        hovertemplate='Total Population: %{y:.1f} thousand<extra></extra>'
+        hovertemplate='Total Population: %{y:.1f}K<extra></extra>'
     ))
     
     fig_trends.add_trace(go.Scatter(
@@ -894,7 +891,7 @@ def show_overview(selected_year, demographics, pyramid, pyramid_percent, regions
         name='Male Population (K)',
         mode='lines',
         line=dict(color='#5DADE2', width=2, dash='dash'),
-        hovertemplate='Male Population: %{y:.1f} thousand<extra></extra>'
+        hovertemplate='Male Population: %{y:.1f}K<extra></extra>'
     ))
     
     fig_trends.add_trace(go.Scatter(
@@ -903,7 +900,7 @@ def show_overview(selected_year, demographics, pyramid, pyramid_percent, regions
         name='Female Population (K)',
         mode='lines',
         line=dict(color='#F1948A', width=2, dash='dash'),
-        hovertemplate='Female Population: %{y:.1f} thousand<extra></extra>'
+        hovertemplate='Female Population: %{y:.1f}K<extra></extra>'
     ))
 
     # Add Birth Rate trend as a secondary y-axis

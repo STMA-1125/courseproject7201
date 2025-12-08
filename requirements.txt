@@ -1,9 +1,20 @@
-geopandas
+# Core dependencies
+streamlit
 pandas
+numpy
+
+# Visualization
 plotly
+
+# Geospatial libraries
+geopandas
 shapely
 fiona
 pyproj
+
+# Map visualization
 folium
 branca
-streamlit_elements
+
+# UI components
+streamlit-elements

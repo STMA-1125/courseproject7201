@@ -7,7 +7,6 @@ import plotly.io as pio
 
 
 def load_pyramid_csv(csv_path: str) -> pd.DataFrame:
-    # Read everything as string to avoid ambiguous date parsing warnings,
     # then convert numeric columns explicitly.
     df = pd.read_csv(csv_path, dtype=str, keep_default_na=False)
     df = df.replace({"": pd.NA}).dropna(how="all")
@@ -31,7 +30,7 @@ def pivot_pyramid_df(df: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]:
 
     long["Population"] = pd.to_numeric(long["Population"], errors="coerce").fillna(0.0)
     long["Population_Neg"] = long.apply(lambda r: -r["Population"] if r["Sex"] == "Male" else r["Population"], axis=1)
-    # Add absolute value column for hover - this is the key fix
+    # Add absolute value column for hover
     long["Population_Abs"] = long["Population"].abs()
 
     age_order = list(df["Age Group"].dropna().unique())
@@ -42,7 +41,10 @@ def pivot_pyramid_df(df: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]:
 def build_pyramid_figure(long: pd.DataFrame, age_order: List[str], start_mode: str = 'last') -> go.Figure:
     """Build and return the animated population pyramid with clean hover."""
     color_map = {"Male": "#5DADE2", "Female": "#F1948A"}
-    xmax = 15.0
+    
+    # Calculate actual max value from absolute population (not negative) and add 20% buffer
+    actual_max = long["Population"].abs().max()
+    xmax = max(15.0, actual_max * 1.2)  # At least 15, or 120% of max value for padding
 
     # Create figure with px.bar
     fig = px.bar(
@@ -85,7 +87,7 @@ def build_pyramid_figure(long: pd.DataFrame, age_order: List[str], start_mode: s
         elif trace.name == "Female":
             trace.hovertemplate = female_template
             
-    # --- CRITICAL: Also update the hovertemplate in frames ---
+    # Update the hovertemplate in frames 
     if hasattr(fig, "frames") and fig.frames:
         for frame in fig.frames:
             for trace in frame.data:
@@ -93,21 +95,13 @@ def build_pyramid_figure(long: pd.DataFrame, age_order: List[str], start_mode: s
                     trace.hovertemplate = male_template
                 elif trace.name == "Female":
                     trace.hovertemplate = female_template
-    # --- End Custom Hover Configuration ---
 
     # Add year annotation
     years = sorted(long["Year"].unique())
-    # start_mode controls how the chart appears on initial render in the page:
-    #  - 'last': show the latest year's frame (useful for snapshot view of latest data)
-    #  - 'off' : disable startup animation and show an empty/off view until the user plays
-    #  - 'first' : shows the first year and is the default behavior of many animations
-    # You can change this when calling the function from a UI (e.g., Streamlit) by
-    # passing start_mode='off' to prevent any autoplay behavior.
-    # The initial_year annotation is controlled by start_mode (last, off, first)
     if start_mode == 'last':
         initial_year = years[-1] if len(years) > 0 else ""
     elif start_mode == 'off':
-        initial_year = years[0] if len(years) > 0 else ""  # Show first year when 'off'
+        initial_year = years[0] if len(years) > 0 else ""  
     else:
         initial_year = years[0] if len(years) > 0 else ""
 
@@ -274,12 +268,11 @@ def build_pyramid_figure(long: pd.DataFrame, age_order: List[str], start_mode: s
     )
 
     # Position controls slightly above the year slider; use icons for buttons
-    # create copies to avoid overriding the original dicts
     play_btn = play_button.copy()
     play_btn['label'] = '▶'
     pause_btn = pause_button.copy()
     pause_btn['label'] = '⏸'
-    # Stop needs to reset to first year (using animate to jump to the first frame)
+    # Stop (reset to first year) 
     stop_btn = stop_button.copy()
     stop_btn['label'] = '⏹'
     if years:
@@ -288,8 +281,7 @@ def build_pyramid_figure(long: pd.DataFrame, age_order: List[str], start_mode: s
             method='animate',
             args=[[str(years[0])], {"frame": {"duration": 0, "redraw": True}, "mode": "immediate"}],
         )
-    # Position controls to left side of the slider. We'll base it on s.x so it sits just to the left
-    # of the slider start. If slider is defined, set x accordingly.
+    # Position controls to left side of the slider. 
     os_slider_x = 0.5
     if fig.layout.sliders:
         os_slider_x = fig.layout.sliders[0].x
@@ -314,9 +306,6 @@ def build_pyramid_figure(long: pd.DataFrame, age_order: List[str], start_mode: s
     )
 
     # Year dropdown + custom controls
-    # Position dropdown below the legend (legend is at top-right by default)
-    # Place the dropdown above the right end of the slider if slider present,
-    # otherwise keep the default bottom-right placement.
     dropdown_x = locals().get('dropdown_x', 0.92)
     dropdown_y = locals().get('dropdown_y', -0.15)
     fig.update_layout(
@@ -338,7 +327,7 @@ def build_pyramid_figure(long: pd.DataFrame, age_order: List[str], start_mode: s
 
     # Add label annotation above the dropdown
     current_annotations = list(fig.layout.annotations) if fig.layout.annotations else []
-    # Place the label right above the dropdown (if computed from slider, use that)
+    # Place the label right above the dropdown 
     label_x = locals().get('dropdown_x', 0.92)
     # Place the label a bit higher above the dropdown to avoid overlap
     label_y = locals().get('dropdown_y', -0.15) + 0.10
@@ -368,7 +357,6 @@ def build_and_save(long: pd.DataFrame, age_order: List[str], out_html: str) -> N
 
 
 def main():
-    # Resolve project root (parent of this `graphs` directory) so CSV is read from data/processed
     graphs_dir = os.path.abspath(os.path.dirname(__file__))
     project_root = os.path.abspath(os.path.join(graphs_dir, os.pardir))
 

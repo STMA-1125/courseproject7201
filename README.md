@@ -4,90 +4,132 @@ An interactive Streamlit-based dashboard for analyzing and visualizing demograph
 
 ## Features
 
-- **Overview**: Key demographic metrics, population trends, and regional choropleth maps
+- **Overview**: Key demographic metrics, population age structure and trends, non-resident workers, and regional choropleth map
 - **Population Pyramid**: Interactive age-gender population pyramids with absolute and percentage views
 - **Demographic Analysis**: Multi-dimensional trend visualizations, age structure analysis, and forecasting
 - **Interactive Controls**: Year selection slider and navigation between different analysis sections
 - **Responsive Design**: Wide layout with enhanced styling and sidebar controls
+- **Performance Optimized**: Efficient caching and vectorized computations
 
 ## Installation
 
-1. Clone this repository:
+1. **Clone this repository:**
    ```bash
    git clone <repository-url>
    cd courseproject7201
    ```
 
-2. Install the required dependencies:
+2. **Create a virtual environment:**
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   ```
+
+3. **Install dependencies:**
    ```bash
    pip install -r requirements.txt
    ```
 
-3. Ensure geospatial data files are present in the `data/` directory (e.g., `macao.shp`, `macaushape.geojson`).
+4. **Ensure data files are present:**
+   - Demographic data in `data/processed/`
+   - Geospatial files in `data/` 
 
 ## Usage
 
-Run the Streamlit application:
+**Run the Streamlit application:**
 ```bash
-streamlit run Streamlit.py
+streamlit run streamlit_app.py
 ```
 
-Navigate through the dashboard using the sidebar controls:
-- Select a year using the slider (1999-2024)
-- Click on section buttons: Overview, Population Pyramid, Demographic Analysis
-
-## Data Sources
-
-- **Primary Data**: Macao Statistics and Census Service
-- **Geospatial Data**: Macao administrative boundaries (shapefiles and GeoJSON)
-- **Time Period**: 1999-2024
+**Navigate the dashboard:**
+- Use the year slider (1999-2024) in the sidebar
+- Click section buttons to switch views:
+  - Overview
+  - Population Pyramid
+  - Demographic Analysis
 
 ## Project Structure
 
 ```
 courseproject7201/
-├── config.py                 # Configuration settings and file paths
-├── requirements.txt          # Python dependencies
-├── Streamlit.py             # Main Streamlit application
-├── data/                    # Data directory
-│   ├── macaushape.geojson   # Geospatial boundary data
-│   ├── macao-shapefile/     # Shapefile components
-│   ├── processed/           # Processed CSV data files
-│   └── raw/                 # Raw data and preprocessing scripts
-│       ├── dsec_dataset.csv # Raw time-series CSV from DSEC
-│       └── time-series_preprocessing.py  # Script to clean and generate `processed/` CSVs
-├── graphs/                  # Generated visualizations and HTML files
-├── modules/                 # Reusable modules
-│   ├── data_loader.py       # Data loading utilities
-│   └── ui_components.py     # UI component helpers
-├── sections/                # Dashboard sections
-│   ├── overview.py          # Overview section
-│   ├── pyramid.py           # Population pyramid section
-│   └── analysis.py          # Analysis section
-└── utils/                   # Utility functions
-    └── calculations.py      # Demographic calculations
+├── streamlit_app.py           # Main application entry point
+├── config.py                  # Configuration (paths, colors, settings)
+├── requirements.txt           # Python dependencies
+│
+├── data/                      # Data directory
+│   ├── processed/            # Cleaned demographic CSVs
+│   │   ├── macao_demographics_1999_2024.csv
+│   │   ├── population_pyramid_data.csv
+│   │   └── population_pyramid_data_percentage.csv
+│   ├── raw/                  # Original datasets
+│   └── macao-shapefile/      # Geospatial files 
+│
+├── modules/                   # Core modules
+│   ├── data_loader.py        # Data loading utilities
+│   └── ui_components.py      # Reusable UI components
+│
+├── sections/                  # Page sections
+│   ├── overview.py           # Overview page
+│   ├── pyramid.py            # Population pyramid page
+│   └── analysis.py           # Analysis page
+│
+├── graphs/                    # Visualization builders
+│   ├── choropleth_builder.py # Choropleth map generation
+│   └── [other visualization scripts]
+│
+├── utils/                     # Utility functions
+│   └── calculations.py       # Demographic calculations
+│
+├── static/                    # Static assets
+│   └── styles.css            # Custom CSS
+│
+└── images/                    # Icons and images
 ```
 
 ## Dependencies
 
-- geopandas: Geospatial data handling
-- pandas: Data manipulation
-- plotly: Interactive visualizations
-- shapely: Geometric operations
-- fiona: Geospatial file I/O
-- pyproj: Coordinate transformations
-- folium: Leaflet maps
-- branca: Color schemes for maps
-- streamlit_elements: Enhanced Streamlit UI components
+### Core
+- **streamlit**: Web application framework
+- **pandas**: Data manipulation and analysis
+- **numpy**: Numerical computations
+- **plotly**: Interactive visualizations
 
-## Requirements
+### Geospatial 
+- **geopandas**: Geospatial data handling
+- **shapely**: Geometric operations
+- **fiona**: Geospatial file I/O
+- **pyproj**: Coordinate transformations
+- **folium**: Leaflet maps
+- **branca**: Color schemes for maps
 
-- Python 3.7+
-- Streamlit
-- Geospatial libraries (GeoPandas, Fiona, etc.)
+### UI Components
+- **streamlit-elements**  Enhanced UI elements
+
+## Data Sources
+
+- **Primary Data**: Macao Statistics and Census Service (DSEC)
+- **Geospatial Data**: Macao administrative boundaries (shapefiles and GeoJSON)
+- **Time Period**: 1999-2024
+- **Update Frequency**: Annual
 
 ## Troubleshooting
 
-- **Choropleth maps not loading**: Ensure geospatial files (`macao.shp` or `macaushape.geojson`) are present in the `data/` directory.
-- **Import errors**: Verify all dependencies are installed via `pip install -r requirements.txt`.
-- **Data loading issues**: Check that processed CSV files exist in `data/processed/`.
+### Common Issues
+
+**Choropleth maps not loading:**
+- Ensure geospatial files exist in `data/` directory
+- Install geospatial dependencies: `pip install geopandas fiona shapely`
+- Check file paths in `config.py`
+
+**Import errors:**
+- Verify all dependencies: `pip install -r requirements.txt`
+- Check Python version (3.7+ required, 3.9+ recommended)
+- Consider using a virtual environment
+
+**Data loading issues:**
+- Verify CSV files exist in `data/processed/`
+- Check file permissions
+- Review logs for specific errors
+
+
+
