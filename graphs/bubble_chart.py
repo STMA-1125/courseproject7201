@@ -11,11 +11,31 @@ Bubble size encodes total population.
 
 from __future__ import annotations
 
+from functools import lru_cache
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
+
+
+def _resolve_processed_demographics_csv() -> Path:
+    """Resolve the processed demographics CSV from common working directories."""
+    candidates = [
+        Path("data/processed/macao_demographics_1999_2024.csv"),
+        Path("../data/processed/macao_demographics_1999_2024.csv"),
+    ]
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+    raise FileNotFoundError(f"Could not find data file at any of: {', '.join(map(str, candidates))}")
+
+
+@lru_cache(maxsize=8)
+def _read_csv_cached(path_str: str, mtime_ns: int) -> pd.DataFrame:
+    """Read a CSV with caching keyed by file path and mtime."""
+    # NOTE: mtime_ns is intentionally unused except as part of the cache key.
+    return pd.read_csv(path_str)
 
 def create_bubble_chart() -> go.Figure:
     """Build the age-structure bubble chart.
@@ -27,14 +47,8 @@ def create_bubble_chart() -> go.Figure:
         FileNotFoundError: If the processed demographics CSV cannot be located.
     """
 
-    # Support running from either project root or the `graphs/` directory.
-    data_path = Path("data/processed/macao_demographics_1999_2024.csv")
-    if not data_path.exists():
-        data_path = Path("../data/processed/macao_demographics_1999_2024.csv")
-    if not data_path.exists():
-        raise FileNotFoundError(f"Could not find data file at {data_path}")
-
-    df = pd.read_csv(data_path)
+    data_path = _resolve_processed_demographics_csv()
+    df = _read_csv_cached(str(data_path), data_path.stat().st_mtime_ns).copy()
 
     # Defensive cleanup for CSVs that may include trailing spaces.
     df.columns = df.columns.str.strip()

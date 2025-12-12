@@ -6,10 +6,25 @@ import logging
 import pandas as pd
 import streamlit as st
 
-from config import DATA_DIR, GRAPHS_DIR
+from config import DATA_DIR
 
 # Configure logging
 logger = logging.getLogger(__name__)
+
+
+def _file_mtime_ns(path) -> int:
+    """Return file modified time in nanoseconds.
+
+    Used to invalidate Streamlit caches when underlying files change.
+    """
+    return path.stat().st_mtime_ns
+
+
+@st.cache_data(show_spinner=False)
+def _read_csv_cached(path_str: str, mtime_ns: int) -> pd.DataFrame:
+    """Read a CSV with cache invalidation controlled by file mtime."""
+    # NOTE: mtime_ns is intentionally unused except as part of the cache key.
+    return pd.read_csv(path_str)
 
 # Import choropleth builder if available (optional geospatial dependency)
 try:
@@ -27,9 +42,13 @@ def load_data():
         tuple: (demographics, pyramid, pyramid_percent) DataFrames or (None, None, None) on error
     """
     try:
-        demographics = pd.read_csv(DATA_DIR / 'macao_demographics_1999_2024.csv')
-        pyramid = pd.read_csv(DATA_DIR / 'population_pyramid_data.csv')
-        pyramid_percent = pd.read_csv(DATA_DIR / 'population_pyramid_data_percentage.csv')
+        demographics_path = DATA_DIR / 'macao_demographics_1999_2024.csv'
+        pyramid_path = DATA_DIR / 'population_pyramid_data.csv'
+        pyramid_percent_path = DATA_DIR / 'population_pyramid_data_percentage.csv'
+
+        demographics = _read_csv_cached(str(demographics_path), _file_mtime_ns(demographics_path))
+        pyramid = _read_csv_cached(str(pyramid_path), _file_mtime_ns(pyramid_path))
+        pyramid_percent = _read_csv_cached(str(pyramid_percent_path), _file_mtime_ns(pyramid_percent_path))
         
         logger.info(f"Successfully loaded {len(demographics)} demographic records")
         return demographics, pyramid, pyramid_percent

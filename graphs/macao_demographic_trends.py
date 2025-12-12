@@ -9,6 +9,9 @@ builds the figure for local preview.
 
 from __future__ import annotations
 
+from functools import lru_cache
+from pathlib import Path
+
 import pandas as pd
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
@@ -33,7 +36,7 @@ def _default_df() -> pd.DataFrame:
     Returns:
         A dataframe with the derived columns required by `build_trends_figure`.
     """
-    df = pd.read_csv('data/processed/macao_demographics_1999_2024.csv')
+    df = _load_processed_demographics_csv().copy()
     # Normalize columns
     df['Total_Population'] = df['Total population']
     df['Non_Resident_Workers'] = df['Non-resident workers total']
@@ -47,6 +50,28 @@ def _default_df() -> pd.DataFrame:
     df['Density_Index'] = (df['Population_Density'] / base_density) * 100
     df['Non_Resident_Ratio'] = (df['Non_Resident_Workers'] / (df['Total_Population'] * 1000)) * 100
     return df
+
+
+def _resolve_processed_demographics_csv() -> Path:
+    candidates = [
+        Path("data/processed/macao_demographics_1999_2024.csv"),
+        Path("../data/processed/macao_demographics_1999_2024.csv"),
+    ]
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+    raise FileNotFoundError(f"Could not find data file at any of: {', '.join(map(str, candidates))}")
+
+
+@lru_cache(maxsize=4)
+def _read_csv_cached(path_str: str, mtime_ns: int) -> pd.DataFrame:
+    # NOTE: mtime_ns is intentionally unused except as part of the cache key.
+    return pd.read_csv(path_str)
+
+
+def _load_processed_demographics_csv() -> pd.DataFrame:
+    path = _resolve_processed_demographics_csv()
+    return _read_csv_cached(str(path), path.stat().st_mtime_ns)
 
 
 def build_trends_figure(df=None):

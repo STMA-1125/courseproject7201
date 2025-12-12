@@ -69,7 +69,7 @@ if CHOROPLETH_AVAILABLE:
         CHOROPLETH_MISSING_REASON = None
 
 # Local package imports
-from config import COLORS, FILE_NAMES, PAGE_CONFIG
+from config import COLORS, FILE_NAMES, PAGE_CONFIG, DATA_DIR
 from modules.data_loader import load_data, load_choropleth_data
 from modules.ui_components import section_header, decorative_header
 from sections.analysis import show_analysis
@@ -91,15 +91,36 @@ st.set_page_config(
 )
 
 css_file = Path(__file__).parent / "static" / "styles.css"
+def _file_mtime_ns(path: Path) -> int:
+    return path.stat().st_mtime_ns
+
+
+@st.cache_data(show_spinner=False)
+def _read_text_cached(path_str: str, mtime_ns: int) -> str:
+    # NOTE: mtime_ns is intentionally unused except as part of the cache key.
+    return Path(path_str).read_text(encoding='utf-8')
+
+
 if css_file.exists():
-    with open(css_file, 'r', encoding='utf-8') as f:
-        st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
+    st.markdown(f'<style>{_read_text_cached(str(css_file), _file_mtime_ns(css_file))}</style>', unsafe_allow_html=True)
 else:
     # Fallback to inline CSS if file not found
     st.warning("CSS file not found. Using default styles.")
 
+def _data_mtime_version() -> tuple[int, int, int]:
+    """Return a stable version tuple so cache invalidates when CSVs change."""
+    demo = (Path(DATA_DIR) / FILE_NAMES["demographics"]).resolve()
+    pyr = (Path(DATA_DIR) / FILE_NAMES["pyramid"]).resolve()
+    pyr_pct = (Path(DATA_DIR) / FILE_NAMES["pyramid_percent"]).resolve()
+    return (
+        demo.stat().st_mtime_ns if demo.exists() else 0,
+        pyr.stat().st_mtime_ns if pyr.exists() else 0,
+        pyr_pct.stat().st_mtime_ns if pyr_pct.exists() else 0,
+    )
+
+
 @st.cache_data(ttl=3600, show_spinner="Loading demographic data...")
-def load_and_enrich_data():
+def load_and_enrich_data(_version: tuple[int, int, int]):
     """Load and enrich demographics data with computed metrics.
     
     Cached for 1 hour to avoid redundant computations.
@@ -126,7 +147,7 @@ def load_and_enrich_data():
         return None, None, None
 
 # Load enriched data (cached)
-demographics, pyramid, pyramid_percent = load_and_enrich_data()
+demographics, pyramid, pyramid_percent = load_and_enrich_data(_data_mtime_version())
 regions_gdf, geojson = load_choropleth_data()
 
 if demographics is None:

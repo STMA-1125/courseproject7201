@@ -9,6 +9,9 @@ dashboard storytelling rather than formal demographic modeling.
 
 from __future__ import annotations
 
+from functools import lru_cache
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
@@ -27,6 +30,28 @@ historical_data = {
 df_historical = pd.DataFrame(historical_data)
 
 future_years = list(range(2025, 2036))
+
+
+def _resolve_processed_demographics_csv() -> Path:
+    candidates = [
+        Path("data/processed/macao_demographics_1999_2024.csv"),
+        Path("../data/processed/macao_demographics_1999_2024.csv"),
+    ]
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+    raise FileNotFoundError(f"Could not find data file at any of: {', '.join(map(str, candidates))}")
+
+
+@lru_cache(maxsize=4)
+def _read_csv_cached(path_str: str, mtime_ns: int) -> pd.DataFrame:
+    # NOTE: mtime_ns is intentionally unused except as part of the cache key.
+    return pd.read_csv(path_str)
+
+
+def _load_processed_demographics_csv() -> pd.DataFrame:
+    path = _resolve_processed_demographics_csv()
+    return _read_csv_cached(str(path), path.stat().st_mtime_ns)
 
 def generate_forecast_baseline(last_pop, last_aging):
     """Baseline scenario: moderate growth with gradual aging."""
@@ -77,7 +102,7 @@ def build_forecast_figure(df=None):
                 # If densities/units mismatch, fallback to existing sample df
                 hist_df = df_historical
     else:
-        hist_df = pd.read_csv('data/processed/macao_demographics_1999_2024.csv')
+        hist_df = _load_processed_demographics_csv().copy()
         hist_df['Total_Population'] = hist_df['Total population']
         hist_df['Aging_Ratio'] = (hist_df['Age 65 and above'] / hist_df['Total population']) * 100
 

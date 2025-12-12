@@ -7,14 +7,35 @@ for absolute values or percentages.
 from __future__ import annotations
 
 # NOTE: No runtime script runner is provided; `os` was previously used by runner.
+from functools import lru_cache
+from pathlib import Path
 from typing import List, Tuple, Literal
 
+import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 
 
 Mode = Literal["abs", "pct"]
+
+
+def _resolve_csv_path(csv_path: str) -> Path:
+    """Resolve CSV path relative to common working directories."""
+    path = Path(csv_path)
+    if path.exists():
+        return path
+    alt = Path("../") / path
+    if alt.exists():
+        return alt
+    return path
+
+
+@lru_cache(maxsize=8)
+def _read_pyramid_csv_cached(path_str: str, mtime_ns: int) -> pd.DataFrame:
+    """Read a pyramid CSV as strings (cache keyed by mtime)."""
+    # NOTE: mtime_ns is intentionally unused except as part of the cache key.
+    return pd.read_csv(path_str, dtype=str, keep_default_na=False)
 
 
 def load_pyramid_csv(csv_path: str) -> pd.DataFrame:
@@ -28,8 +49,9 @@ def load_pyramid_csv(csv_path: str) -> pd.DataFrame:
       - read as strings first; explicitly coerce numeric columns
       - strip commas to support thousands separators
     """
-
-    df = pd.read_csv(csv_path, dtype=str, keep_default_na=False)
+    path = _resolve_csv_path(csv_path)
+    mtime_ns = path.stat().st_mtime_ns if path.exists() else 0
+    df = _read_pyramid_csv_cached(str(path), mtime_ns).copy()
     df = df.replace({"": pd.NA}).dropna(how="all")
 
     for col in df.columns:
@@ -59,10 +81,7 @@ def pivot_pyramid_df(df: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]:
 
     long["Population"] = pd.to_numeric(long["Population"], errors="coerce").fillna(0.0)
     # Mirror males to the left so both sexes share one centered axis.
-    long["Population_Neg"] = long.apply(
-        lambda r: -r["Population"] if r["Sex"] == "Male" else r["Population"],
-        axis=1,
-    )
+    long["Population_Neg"] = np.where(long["Sex"] == "Male", -long["Population"], long["Population"])
     long["Population_Abs"] = long["Population"].abs()
 
     age_order = list(df["Age Group"].dropna().unique())

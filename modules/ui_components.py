@@ -11,6 +11,24 @@ import streamlit as st
 # Configure logging
 logger = logging.getLogger(__name__)
 
+
+def _file_mtime_ns(path_str: str) -> int:
+    return os.stat(path_str).st_mtime_ns
+
+
+@st.cache_data(show_spinner=False)
+def _image_file_to_data_uri(path_str: str, mtime_ns: int) -> str:
+    """Convert a local image file to a base64 data URI.
+
+    Cache is keyed by file path + mtime so it refreshes when the file changes.
+    """
+    # NOTE: mtime_ns is intentionally unused except as part of the cache key.
+    with open(path_str, 'rb') as f:
+        data = f.read()
+    ext = os.path.splitext(path_str)[1].lower()
+    mime = 'image/png' if ext in ['.png'] else 'image/svg+xml' if ext == '.svg' else 'image/png'
+    return f"data:{mime};base64,{base64.b64encode(data).decode('utf-8')}"
+
 def section_header(title: str, emoji: str = "📊") -> None:
     """Render a styled section header.
     
@@ -54,31 +72,19 @@ def decorative_header(title, subtitle="", badges=None, icon=None, project_root=N
             if icon.startswith('data:'):
                 icon_src = icon
             elif os.path.isabs(icon) and os.path.exists(icon):
-                with open(icon, 'rb') as f:
-                    _d = f.read()
-                ext = os.path.splitext(icon)[1].lower()
-                mime = 'image/png' if ext in ['.png'] else 'image/svg+xml' if ext == '.svg' else 'image/png'
-                icon_src = f"data:{mime};base64,{base64.b64encode(_d).decode('utf-8')}"
+                icon_src = _image_file_to_data_uri(icon, _file_mtime_ns(icon))
             elif project_images_dir:
                 # Look for <icon>.png, <icon>.svg, icon file; else if icon looks like a filename with extension
                 for candidate_name in [icon, f"{icon}.png", f"{icon}.svg"]:
                     candidate_path = os.path.join(project_images_dir, candidate_name)
                     if os.path.exists(candidate_path):
-                        with open(candidate_path, 'rb') as f:
-                            _d = f.read()
-                        ext = os.path.splitext(candidate_path)[1].lower()
-                        mime = 'image/png' if ext in ['.png'] else 'image/svg+xml' if ext == '.svg' else 'image/png'
-                        icon_src = f"data:{mime};base64,{base64.b64encode(_d).decode('utf-8')}"
+                        icon_src = _image_file_to_data_uri(candidate_path, _file_mtime_ns(candidate_path))
                         break
         if icon_src is None and project_images_dir:
             for fallback in ['dashboard.svg', 'dashboard.png', 'analysis.svg', 'analysis.png']:
                 candidate_path = os.path.join(project_images_dir, fallback)
                 if os.path.exists(candidate_path):
-                    with open(candidate_path, 'rb') as f:
-                        _d = f.read()
-                    ext = os.path.splitext(candidate_path)[1].lower()
-                    mime = 'image/png' if ext in ['.png'] else 'image/svg+xml' if ext == '.svg' else 'image/png'
-                    icon_src = f"data:{mime};base64,{base64.b64encode(_d).decode('utf-8')}"
+                    icon_src = _image_file_to_data_uri(candidate_path, _file_mtime_ns(candidate_path))
                     break
     except Exception:
         icon_src = None
