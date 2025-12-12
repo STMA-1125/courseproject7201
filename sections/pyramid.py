@@ -1,18 +1,14 @@
 import streamlit as st
 from pathlib import Path
 
-from graphs import macao_pyramid, macao_pyramid_percent
+from graphs import macao_population_pyramid
 from modules.ui_components import decorative_header
 
 
 def show_pyramid(selected_year, project_root):
-    load_abs_csv = macao_pyramid.load_pyramid_csv
-    pivot_abs_df = macao_pyramid.pivot_pyramid_df
-    build_abs_figure = macao_pyramid.build_pyramid_figure
-    
-    load_pct_csv = macao_pyramid_percent.load_pyramid_csv
-    pivot_pct_df = macao_pyramid_percent.pivot_pyramid_df
-    build_pct_figure = macao_pyramid_percent.build_pyramid_figure
+    load_csv = macao_population_pyramid.load_pyramid_csv
+    pivot_df = macao_population_pyramid.pivot_pyramid_df
+    build_figure = macao_population_pyramid.build_pyramid_figure
     
     decorative_header(
         "Population Pyramid Analysis",
@@ -40,10 +36,10 @@ def show_pyramid(selected_year, project_root):
         st.markdown("Shows the actual number of people in each age group and gender.")
         try:
             csv_path = project_root / "data" / "processed" / "population_pyramid_data.csv"
-            df = load_abs_csv(str(csv_path))
-            long, age_order = pivot_abs_df(df)
+            df = load_csv(str(csv_path))
+            long, age_order = pivot_df(df)
             # Use 'off' startup mode so the figure is static until the user plays it
-            fig = build_abs_figure(long, age_order, start_mode=start_mode)
+            fig = build_figure(long, age_order, mode="abs", start_mode=start_mode)
             st.plotly_chart(fig, key="pyramid_abs", width="stretch")
         except FileNotFoundError:
             st.error(f"❌ File `population_pyramid_data.csv` not found.")
@@ -62,10 +58,10 @@ def show_pyramid(selected_year, project_root):
         st.markdown("Shows the proportion of the total population in each age group and gender.")
         try:
             csv_path = project_root / "data" / "processed" / "population_pyramid_data_percentage.csv"
-            df = load_pct_csv(str(csv_path))
-            long, age_order = pivot_pct_df(df)
+            df = load_csv(str(csv_path))
+            long, age_order = pivot_df(df)
             # Use 'off' startup mode so the figure is static until the user plays it
-            fig = build_pct_figure(long, age_order, start_mode=start_mode)
+            fig = build_figure(long, age_order, mode="pct", start_mode=start_mode)
             st.plotly_chart(fig, key="pyramid_pct", width="stretch")
         except FileNotFoundError:
             st.error(f"❌ File `population_pyramid_data_percentage.csv` not found.")
