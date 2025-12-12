@@ -379,7 +379,7 @@ def build_choropleth_figure(
     
     # === GLOBAL COLOR SCALING ===
     if global_vmin is None or global_vmax is None:
-        # Use fixed range from 0 to 60 km² as requested
+        # Use fixed range from 0 to 60 km²
         global_vmin, global_vmax = 0, 60
     
     # Ensure current year's values fit in global range
@@ -395,7 +395,6 @@ def build_choropleth_figure(
     mid_rgb = (255, 165, 0)      # orange at midpoint
     end_rgb = (180, 0, 0)        # slightly dark red at end
 
-    # For 0.1 unit steps from 0 to 60 we need 600 steps: 60 / 0.1 = 600 -> plus 1 for inclusive endpoint -> 601 stops
     n_steps = 600  # 0..60 inclusive -> 601 stops (0.1 per step)
     colorscale = []
     for i in range(n_steps + 1):
@@ -473,73 +472,73 @@ def build_choropleth_figure(
     
     fig = go.Figure(data=traces)
     
-    # Add text labels directly on regions
-    regions_geo = regions_gdf.copy()
-    if regions_geo.crs is None:
-        regions_geo = regions_geo.set_crs(epsg=4326)
+    # # Add text labels directly on regions
+    # regions_geo = regions_gdf.copy()
+    # if regions_geo.crs is None:
+    #     regions_geo = regions_geo.set_crs(epsg=4326)
     
-    if getattr(regions_geo.crs, 'to_epsg', lambda: None)() != 4326:
-        regions_geo = regions_geo.to_crs(epsg=4326)
+    # if getattr(regions_geo.crs, 'to_epsg', lambda: None)() != 4326:
+    #     regions_geo = regions_geo.to_crs(epsg=4326)
     
-    # Calculate label positions
-    label_lons = []
-    label_lats = []
-    label_texts = []
-    label_colors = []
-    label_bgcolors = []
-    label_borders = []
+    # # Calculate label positions
+    # label_lons = []
+    # label_lats = []
+    # label_texts = []
+    # label_colors = []
+    # label_bgcolors = []
+    # label_borders = []
 
-    for idx, region_name in enumerate(regions_list):
-        match = regions_geo[regions_geo['region_name'] == region_name]
-        if not match.empty:
-            geom_obj = match.geometry.unary_union
-            centroid = geom_obj.centroid
-            lon = centroid.x
-            lat = centroid.y
-        else:
-            centroid = regions_geo.geometry.unary_union.centroid
-            lon = centroid.x
-            lat = centroid.y
+    # for idx, region_name in enumerate(regions_list):
+    #     match = regions_geo[regions_geo['region_name'] == region_name]
+    #     if not match.empty:
+    #         geom_obj = match.geometry.unary_union
+    #         centroid = geom_obj.centroid
+    #         lon = centroid.x
+    #         lat = centroid.y
+    #     else:
+    #         centroid = regions_geo.geometry.unary_union.centroid
+    #         lon = centroid.x
+    #         lat = centroid.y
 
-        val = values[idx]
-        label_lons.append(lon)
-        label_lats.append(lat)
-        label_texts.append(f"<b>{region_name}</b><br>{val:.1f}k/km²")
+    #     val = values[idx]
+    #     label_lons.append(lon)
+    #     label_lats.append(lat)
+    #     label_texts.append(f"<b>{region_name}</b><br>{val:.1f}k/km²")
 
-        # Dynamic text color based on density
-        normalized_val = (val - vmin) / (vmax - vmin) if vmax > vmin else 0.5
+    #     # Dynamic text color based on density
+    #     normalized_val = (val - vmin) / (vmax - vmin) if vmax > vmin else 0.5
         
-        # Use darker text for light backgrounds, white for dark backgrounds
-        if normalized_val < 0.25:
-            label_colors.append('#ffffff')  # White text
-            label_bgcolors.append('rgba(0,0,0,0.5)')
-            label_borders.append('rgba(255,255,255,0.3)')
-        elif normalized_val > 0.75:
-            label_colors.append('#000000')  # Black text
-            label_bgcolors.append('rgba(255,255,255,0.4)')
-            label_borders.append('rgba(0,0,0,0.2)')
-        else:
-            label_colors.append('#000000')
-            label_bgcolors.append('rgba(255,255,255,0.3)')
-            label_borders.append('rgba(0,0,0,0.1)')
+    #     # Use darker text for light backgrounds, white for dark backgrounds
+    #     if normalized_val < 0.25:
+    #         label_colors.append('#ffffff')  # White text
+    #         label_bgcolors.append('rgba(0,0,0,0.5)')
+    #         label_borders.append('rgba(255,255,255,0.3)')
+    #     elif normalized_val > 0.75:
+    #         label_colors.append('#000000')  # Black text
+    #         label_bgcolors.append('rgba(255,255,255,0.4)')
+    #         label_borders.append('rgba(0,0,0,0.2)')
+    #     else:
+    #         label_colors.append('#000000')
+    #         label_bgcolors.append('rgba(255,255,255,0.3)')
+    #         label_borders.append('rgba(0,0,0,0.1)')
     
-    # Add annotations
-    for lon, lat, text, color, bgcolor, border in zip(
-        label_lons, label_lats, label_texts, label_colors, label_bgcolors, label_borders
-    ):
-        fig.add_annotation(
-            x=lon, y=lat,
-            text=text,
-            showarrow=False,
-            font=dict(size=14, color=color, family="Arial, sans-serif"),
-            bgcolor=bgcolor,
-            bordercolor=border,
-            borderwidth=1,
-            borderpad=6,
-            xanchor="center",
-            yanchor="middle",
-            opacity=0.9
-        )
+    # # Add annotations
+    # for lon, lat, text, color, bgcolor, border in zip(
+    #     label_lons, label_lats, label_texts, label_colors, label_bgcolors, label_borders
+    # ):
+    #     fig.add_annotation(
+    #         x=lon, y=lat,
+    #         text=text,
+    #         showarrow=False,
+    #         font=dict(size=14, color=color, family="Arial, sans-serif"),
+    #         bgcolor=bgcolor,
+    #         bordercolor=border,
+    #         borderwidth=1,
+    #         borderpad=6,
+    #         xanchor="center",
+    #         yanchor="middle",
+    #         opacity=0.9
+    #     )
     
     # Update layout
     fig.update_geos(
@@ -549,38 +548,20 @@ def build_choropleth_figure(
         bgcolor='rgba(180, 180, 180, 0.8)'  # Darker grey background for map area
     )
 
-    # Add a white header strip behind the title and increase top margin
     fig.update_layout(
-        title=dict(
-            text=f"Macao Population Density - {selected_year}",
-            x=0.5,
-            xanchor='center',
-            font=dict(size=18, color='#2c3e50', family="Arial")
-        ),
-        height=420,  # Set fixed height for consistent display
-        margin=dict(l=20, r=120, t=60, b=20),  # Increase top margin to prevent title clipping
-        paper_bgcolor='white',  # Page background should be white
-        plot_bgcolor='white',  # Plot background (outer area) should be white
-        hovermode='closest',
-        font=dict(family="Arial, sans-serif"),
-        # Enable zoom controls in modebar
-        showlegend=False,
-        shapes=[
-            # white rectangle behind the title to make the title appear on white background
-            dict(
-                type="rect",
-                xref="paper",
-                yref="paper",
-                x0=0,
-                x1=1,
-                y0=1.02,
-                y1=1.12,
-                fillcolor='white',
-                opacity=1,
-                layer='below',
-                line=dict(width=0)
-            )
-        ]
+    title=dict(
+        text=f"Macao Population Density - {selected_year}",
+        x=0.5,
+        xanchor='center',
+        font=dict(size=18, color='#2c3e50', family="Arial")
+    ),
+    height=420,
+    margin=dict(l=20, r=120, t=60, b=20),
+    paper_bgcolor='white',
+    plot_bgcolor='white',
+    hovermode='closest',
+    font=dict(family="Arial, sans-serif"),
+    showlegend=False
     )
     
     return fig

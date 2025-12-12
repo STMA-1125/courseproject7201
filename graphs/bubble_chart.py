@@ -42,7 +42,7 @@ def create_bubble_chart():
     s1 = pop_norm_power.loc[df['Year'] == 1999.0].values
     s2 = pop_norm_power.loc[df['Year'] == 2024.0].values
     if len(s1) == 0 or len(s2) == 0:
-        # fallback: ensure we still have a sensible mapping if years are missing
+        # fallback: ensure a sensible mapping if years are missing
         max_diameter = min_diameter * desired_ratio
         size_pixels = min_diameter + pop_norm_power * (max_diameter - min_diameter)
     else:
