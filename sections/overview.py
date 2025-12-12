@@ -132,31 +132,31 @@ def show_overview(
                 yoy_median_age = median_age - prev_data['Median age']
 
             # Prepare formatted YoY labels and styles with 1 decimal rounding
-            pop_yoy_label = format_yoy_label(yoy_total_pop, '%', decimals=1, use_sign=True) if yoy_total_pop is not None else "YoY change"
+            pop_yoy_label = format_yoy_label(yoy_total_pop, '%', decimals=1, use_sign=True) if yoy_total_pop is not None else ""
             pop_yoy_style = get_yoy_style(round(yoy_total_pop, 1) if yoy_total_pop is not None else None)
 
-            density_yoy_label = format_yoy_label(yoy_density, '', decimals=1, use_sign=True) if yoy_density is not None else "YoY change"
+            density_yoy_label = format_yoy_label(yoy_density, '', decimals=1, use_sign=True) if yoy_density is not None else ""
             density_yoy_style = get_yoy_style(yoy_density)
 
-            workers_yoy_label = format_yoy_label(yoy_workers, '%', decimals=1, use_sign=True) if yoy_workers is not None else "YoY change"
+            workers_yoy_label = format_yoy_label(yoy_workers, '%', decimals=1, use_sign=True) if yoy_workers is not None else ""
             workers_yoy_style = get_yoy_style(yoy_workers)
 
-            annual_yoy_label = format_yoy_label(yoy_annual_growth, '', decimals=1, use_sign=True) if 'yoy_annual_growth' in locals() and yoy_annual_growth is not None else "YoY change"
+            annual_yoy_label = format_yoy_label(yoy_annual_growth, '', decimals=1, use_sign=True) if 'yoy_annual_growth' in locals() and yoy_annual_growth is not None else ""
             annual_yoy_style = get_yoy_style(round(yoy_annual_growth, 1)) if 'yoy_annual_growth' in locals() and yoy_annual_growth is not None else get_yoy_style(None)
 
-            natural_yoy_label = format_yoy_label(yoy_natural_growth, '', decimals=1, use_sign=True) if 'yoy_natural_growth' in locals() and yoy_natural_growth is not None else "YoY change"
+            natural_yoy_label = format_yoy_label(yoy_natural_growth, '', decimals=1, use_sign=True) if 'yoy_natural_growth' in locals() and yoy_natural_growth is not None else ""
             natural_yoy_style = get_yoy_style(yoy_natural_growth) if 'yoy_natural_growth' in locals() else get_yoy_style(None)
 
-            crude_birth_yoy_label = format_yoy_label(yoy_crude_birth, '', decimals=1, use_sign=True) if 'yoy_crude_birth' in locals() and yoy_crude_birth is not None else "YoY change"
+            crude_birth_yoy_label = format_yoy_label(yoy_crude_birth, '', decimals=1, use_sign=True) if 'yoy_crude_birth' in locals() and yoy_crude_birth is not None else ""
             crude_birth_yoy_style = get_yoy_style(yoy_crude_birth) if 'yoy_crude_birth' in locals() else get_yoy_style(None)
 
-            crude_death_yoy_label = format_yoy_label(yoy_crude_death, '', decimals=1, use_sign=True) if 'yoy_crude_death' in locals() and yoy_crude_death is not None else "YoY change"
+            crude_death_yoy_label = format_yoy_label(yoy_crude_death, '', decimals=1, use_sign=True) if 'yoy_crude_death' in locals() and yoy_crude_death is not None else ""
             crude_death_yoy_style = get_yoy_style(yoy_crude_death) if 'yoy_crude_death' in locals() else get_yoy_style(None)
 
-            dependency_yoy_label = format_yoy_label(yoy_dependency, '', decimals=1, use_sign=True) if 'yoy_dependency' in locals() and yoy_dependency is not None else "YoY change"
+            dependency_yoy_label = format_yoy_label(yoy_dependency, '', decimals=1, use_sign=True) if 'yoy_dependency' in locals() and yoy_dependency is not None else ""
             dependency_yoy_style = get_yoy_style(yoy_dependency) if 'yoy_dependency' in locals() else get_yoy_style(None)
 
-            median_yoy_label = format_yoy_label(yoy_median_age, '', decimals=1, use_sign=True) if 'yoy_median_age' in locals() and yoy_median_age is not None else "YoY change"
+            median_yoy_label = format_yoy_label(yoy_median_age, '', decimals=1, use_sign=True) if 'yoy_median_age' in locals() and yoy_median_age is not None else ""
             median_yoy_style = get_yoy_style(yoy_median_age) if 'yoy_median_age' in locals() else get_yoy_style(None)
 
             # 3 rows x 2 columns layout: set md=6 so 2 cards per row (12/6=2)
@@ -509,7 +509,7 @@ def show_overview(
                 if selected_year <= 2007:
                     return "N/A", get_yoy_style(None)
                 if val is None:
-                    return "YoY change", get_yoy_style(None)
+                    return "", get_yoy_style(None)
                 return format_yoy_label(val, '', decimals=1, use_sign=True), get_yoy_style(val)
 
             mp_label, mp_style = region_yoy_label_and_style('Macao Peninsula')

@@ -6,7 +6,7 @@ for absolute values or percentages.
 
 from __future__ import annotations
 
-import os
+# NOTE: No runtime script runner is provided; `os` was previously used by runner.
 from typing import List, Tuple, Literal
 
 import pandas as pd
@@ -387,13 +387,6 @@ def build_pyramid_figure(
 
     return fig
 
-
-def build_and_save(long: pd.DataFrame, age_order: List[str], out_html: str, *, mode: Mode) -> None:
-    fig = build_pyramid_figure(long, age_order, mode=mode)
-    fig.write_html(out_html, include_plotlyjs="cdn")
-    print(f"Saved population pyramid to: {out_html}")
-
-
 def build_pyramid_figure_abs(long: pd.DataFrame, age_order: List[str], start_mode: str = "last") -> go.Figure:
     return build_pyramid_figure(long, age_order, mode="abs", start_mode=start_mode)
 
@@ -401,46 +394,3 @@ def build_pyramid_figure_abs(long: pd.DataFrame, age_order: List[str], start_mod
 def build_pyramid_figure_pct(long: pd.DataFrame, age_order: List[str], start_mode: str = "last") -> go.Figure:
     return build_pyramid_figure(long, age_order, mode="pct", start_mode=start_mode)
 
-
-def build_and_save_abs(long: pd.DataFrame, age_order: List[str], out_html: str) -> None:
-    return build_and_save(long, age_order, out_html, mode="abs")
-
-
-def build_and_save_pct(long: pd.DataFrame, age_order: List[str], out_html: str) -> None:
-    return build_and_save(long, age_order, out_html, mode="pct")
-
-
-def main(*, mode: Mode) -> None:
-    graphs_dir = os.path.abspath(os.path.dirname(__file__))
-    project_root = os.path.abspath(os.path.join(graphs_dir, os.pardir))
-
-    if mode == "abs":
-        csv_name = "population_pyramid_data.csv"
-        out_name = "macao_population_pyramid_abs_value.html"
-    else:
-        csv_name = "population_pyramid_data_percentage.csv"
-        out_name = "macao_population_pyramid_percentage.html"
-
-    csv_path = os.path.join(project_root, "data", "processed", csv_name)
-    out_html = os.path.join(project_root, out_name)
-
-    if not os.path.exists(csv_path):
-        print(f"Error: CSV file not found at {csv_path}")
-        return
-
-    df = load_pyramid_csv(csv_path)
-    long, age_order = pivot_pyramid_df(df)
-    build_and_save(long, age_order, out_html, mode=mode)
-
-
-def main_abs() -> None:
-    return main(mode="abs")
-
-
-def main_pct() -> None:
-    return main(mode="pct")
-
-
-if __name__ == "__main__":
-    # Default to absolute if run directly.
-    main(mode="abs")

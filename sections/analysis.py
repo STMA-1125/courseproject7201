@@ -78,26 +78,12 @@ def show_analysis(selected_year: int, project_root, demographics=None) -> None:
                 style={"padding": "16px", "background": "#f9f9f9", "borderRadius": "8px", "marginBottom": "24px", "border": "1px solid #e0e0e0"}
             )
         
-        # Prefer rendering a live Plotly figure; fall back to a pre-generated HTML artifact.
         try:
             from graphs.macao_demographic_trends import build_trends_figure
-            # Build the figure using the main dataframe if available
             fig = build_trends_figure(demographics) if demographics is not None else build_trends_figure()
             st.plotly_chart(fig, width="stretch")
-        except Exception:
-            # Fallback: embed the pre-generated HTML if import/plotting fails.
-            try:
-                candidates = [project_root / 'graphs' / 'Macao_Demographic_Trends.html', project_root / 'Macao_Demographic_Trends.html']
-                file_path = next((p for p in candidates if p.exists()), None)
-                if file_path is None:
-                    raise FileNotFoundError
-                html_content = file_path.read_text(encoding='utf-8')
-                # Allow scrolling for large standalone HTML files and ensure scripts run inside the iframe
-                st.components.v1.html(html_content, height=500, scrolling=True)
-            except FileNotFoundError:
-                st.error("❌ File `Macao_Demographic_Trends.html` not found and the module import failed")
-            except Exception as e:
-                st.error(f"❌ Error: {str(e)}")
+        except Exception as e:
+            st.error(f"❌ Error generating Trends chart: {str(e)}")
         
         # Forecasting section
         st.markdown("""
@@ -138,24 +124,12 @@ def show_analysis(selected_year: int, project_root, demographics=None) -> None:
                 style={"padding": "16px", "background": "#f9f9f9", "borderRadius": "8px", "marginBottom": "24px", "border": "1px solid #e0e0e0"}
             )
         
-        # Prefer rendering a live Plotly figure; fall back to a pre-generated HTML artifact.
         try:
             from graphs.macao_demographic_trends_forecast import build_forecast_figure
             fig_forecast = build_forecast_figure(demographics) if demographics is not None else build_forecast_figure()
             st.plotly_chart(fig_forecast, width="stretch")
-        except Exception:
-            try:
-                # Prefer graphs/ copy first then project root copy
-                candidates = [project_root / 'graphs' / 'Macao_Demographic_Trends_Forecast.html', project_root / 'Macao_Demographic_Trends_Forecast.html']
-                fpath = next((p for p in candidates if p.exists()), None)
-                if fpath is None:
-                    raise FileNotFoundError
-                forecast_html_content = fpath.read_text(encoding='utf-8')
-                st.components.v1.html(forecast_html_content, height=800, scrolling=True)
-            except FileNotFoundError:
-                st.warning("⚠️ Forecasting visualization not available")
-            except Exception as e:
-                st.error(f"❌ Error: {str(e)}")
+        except Exception as e:
+            st.error(f"❌ Error generating Forecast chart: {str(e)}")
     
     with tab2:
         st.markdown("""

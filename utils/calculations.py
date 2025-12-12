@@ -17,28 +17,26 @@ def format_yoy_label(value, unit='', decimals=1, use_sign=False):
         value: Delta value (percent or absolute) or None/NaN.
         unit: Unit suffix to append (e.g., '%').
         decimals: Number of decimal places.
-        use_sign: If True, use +/- prefix and Δ for zero. If False, use arrows.
+        use_sign: If True, use +/- prefix and Δ for zero. If False, omit '+' for positives.
 
     Returns:
-        A short string label such as '+1.2%', '↓0.8', or 'YoY change'.
+        A short string label such as '+1.2%', '-0.8', or '' when missing.
     """
     try:
         if value is None or (isinstance(value, float) and pd.isna(value)):
-            return "YoY change"
+            return ""
         val = round(float(value), decimals)
+        # If zero, show delta sign (Δ0.0). For positive/negative show +/− as requested.
+        num = f"{abs(val):.{decimals}f}"
+        if float(val) == 0.0:
+            return f"Δ{num}{unit}"
         if use_sign:
-            # If zero, show delta sign (Δ0.0). For positive/negative show +/− as requested.
-            num = f"{abs(val):.{decimals}f}"
-            if float(val) == 0.0:
-                return f"Δ{num}{unit}"
             sign = '+' if val > 0 else '-'
             return f"{sign}{num}{unit}"
-        else:
-            arrow = 'Δ' if val == 0 else ('↑' if val > 0 else '↓')
-            num = f"{abs(val):.{decimals}f}"
-            return f"{arrow}{num}{unit}"
+        prefix = '-' if val < 0 else ''
+        return f"{prefix}{num}{unit}"
     except Exception:
-        return "YoY change"
+        return ""
 
 def get_yoy_style(value):
     """Return the style dictionary for a YoY pill (Streamlit Elements / MUI).

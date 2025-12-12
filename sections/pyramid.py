@@ -19,7 +19,7 @@ def show_pyramid(selected_year: int, project_root: Path) -> None:
     """Render the Population Pyramid section.
 
     Args:
-        selected_year: Currently selected year from the sidebar. The pyramid
+        selected_year: Currently selected year from the year slider. The pyramid
             animations span the full dataset; the year is kept for interface
             consistency and future per-year annotations.
         project_root: Absolute path to the project root folder.
