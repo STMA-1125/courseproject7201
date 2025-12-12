@@ -1,2 +1,4 @@
-# Make graphs a package for import resolution
-# Intentionally empty - this allows Pylance and importlib to resolve submodules
+"""Visualization builders used by the Streamlit dashboard.
+
+This package contains Plotly figure builders and optional geospatial helpers.
+"""

@@ -1,8 +1,19 @@
-"""Choropleth builder module for Macao demographics visualization."""
+"""Choropleth builder for Macao regional density visualization.
+
+This module prepares region geometries (peninsula/taipa/coloane) and builds a
+Plotly choropleth map for population density by region.
+
+Geospatial dependencies (`geopandas`, `fiona`, `shapely`) are optional. When they
+are not installed, importing this module should not crash; the Streamlit app can
+disable choropleth features gracefully.
+"""
+
+from __future__ import annotations
 
 import json
+import logging
 from pathlib import Path
-from typing import Tuple, Dict, Optional, List
+from typing import Tuple, Dict, Optional, List, TYPE_CHECKING
 from functools import lru_cache
 
 import pandas as pd
@@ -16,7 +27,25 @@ try:
     import shapely.ops as ops
     from shapely.geometry import Point, box
 except ImportError as e:
-    print(f"⚠️ Warning: Missing geospatial packages. Choropleth may not work. {e}")
+    gpd = None  # type: ignore[assignment]
+    fiona = None  # type: ignore[assignment]
+    geom = None  # type: ignore[assignment]
+    ops = None  # type: ignore[assignment]
+    Point = None  # type: ignore[assignment]
+    box = None  # type: ignore[assignment]
+    logging.getLogger(__name__).warning(
+        "Missing geospatial packages; choropleth features will be unavailable (%s)",
+        e,
+    )
+
+if TYPE_CHECKING:
+    from geopandas import GeoDataFrame as GeoDataFrame
+else:
+    GeoDataFrame = object
+
+
+# Public flag consumed by the Streamlit app to decide whether to enable choropleth features.
+GEO_DEPS_AVAILABLE = gpd is not None
 
 
 ROOT = Path(__file__).resolve().parent
@@ -35,7 +64,7 @@ GEOJSON_PATH = next(
     ROOT / "data" / "macaushape.geojson"
 )
 
-def find_region_column(gdf: gpd.GeoDataFrame) -> Optional[str]:
+def find_region_column(gdf: GeoDataFrame) -> Optional[str]:
     """Find the region name column in the GeoDataFrame."""
     candidates = [c for c in gdf.columns if any(x in c.lower() for x in ("name", "district", "area", "adm", "region"))]
     if candidates:
@@ -46,7 +75,7 @@ def find_region_column(gdf: gpd.GeoDataFrame) -> Optional[str]:
     return None
 
 
-def load_shapefile() -> gpd.GeoDataFrame:
+def load_shapefile() -> GeoDataFrame:
     """Load the Macao shapefile (contains the whole Macau boundary)."""
     shp_path = next((p for p in SHP_PATHS if p.exists()), SHP_PATHS[0])
     
@@ -79,7 +108,7 @@ def load_shapefile() -> gpd.GeoDataFrame:
     return gdf
 
 
-def load_geojson() -> gpd.GeoDataFrame:
+def load_geojson() -> GeoDataFrame:
     """Load Macau, Taipa, and Coloane polygons from the Macao geojson file."""
     if not GEOJSON_PATH.exists():
         raise FileNotFoundError(f"❌ GeoJSON file not found at {GEOJSON_PATH}")
@@ -113,7 +142,7 @@ def load_geojson() -> gpd.GeoDataFrame:
 
 
 @lru_cache(maxsize=1)
-def prepare_geospatial_data() -> Tuple[gpd.GeoDataFrame, Dict]:
+def prepare_geospatial_data() -> Tuple[GeoDataFrame, Dict]:
     """Load and prepare geospatial data for choropleth with whole Macau base layer and regions from GeoJSON.
     Cached with LRU cache to avoid expensive geometry operations on every render.
     """
@@ -249,7 +278,7 @@ def prepare_geospatial_data() -> Tuple[gpd.GeoDataFrame, Dict]:
     return gdf, geojson
 
 
-def debug_region_split(gdf: gpd.GeoDataFrame, show_seed_points=True) -> None:
+def debug_region_split(gdf: GeoDataFrame, show_seed_points=True) -> None:
     """
     Visualize the regions with matplotlib to verify correctness.
     Call this immediately after prepare_geospatial_data()
@@ -323,13 +352,24 @@ def debug_region_split(gdf: gpd.GeoDataFrame, show_seed_points=True) -> None:
 def build_choropleth_figure(
     selected_year: int,
     demographics_df: pd.DataFrame,
-    regions_gdf: gpd.GeoDataFrame,
+    regions_gdf: GeoDataFrame,
     geojson: Dict,
     global_vmin: float = None,
     global_vmax: float = None
 ) -> go.Figure:
-    """
-    Build a beautiful choropleth with enhanced colors and global scaling.
+    """Build a choropleth map for population density by region.
+
+    Args:
+        selected_year: Year to render.
+        demographics_df: Processed demographics dataframe.
+        regions_gdf: GeoDataFrame produced by `prepare_geospatial_data()`.
+        geojson: GeoJSON mapping of the same geometries.
+        global_vmin: Optional global minimum for color scaling.
+        global_vmax: Optional global maximum for color scaling.
+
+    Returns:
+        A Plotly Figure. If `selected_year` has no rows, returns an empty figure
+        with an explanatory annotation.
     """
     
     # Get data for the selected year

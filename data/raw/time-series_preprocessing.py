@@ -1,15 +1,25 @@
-import re
-import os
-import pandas as pd
-import numpy as np
+"""Preprocess raw DSEC time-series CSV into a clean, typed dataset.
 
-# Paths
+This script reads `dsec_dataset.csv` (raw export), detects the first data row,
+normalizes headers, cleans annotation tokens, and writes
+`data/processed/macao_demographics_1999_2024.csv`.
+"""
+
+from __future__ import annotations
+
+import os
+import re
+
+import numpy as np
+import pandas as pd
+
+# Input/output paths (relative to this script).
 HERE = os.path.dirname(__file__)
 INFILE = os.path.join(HERE, 'dsec_dataset.csv')
 OUTDIR = os.path.join(os.path.dirname(HERE), 'processed')
 OUTFILE = os.path.join(OUTDIR, 'macao_demographics_1999_2024.csv')
 
-# Column names inferred from the dataset / image
+# Column names inferred from the raw dataset layout.
 original_columns = [
     'Year',
     'Total population',          # '000
@@ -42,7 +52,9 @@ original_columns = [
     'Note'                       # annotation column (e.g., ~, 0#)
 ]
 
+# -----------------
 # Helper functions
+# -----------------
 
 def find_data_start_row(filepath):
     """Find the first row index (0-based) where the first column looks like a 4-digit year."""
@@ -74,6 +86,7 @@ def clean_value(x):
 
 
 if __name__ == '__main__':
+    # Script entrypoint for ad-hoc dataset regeneration.
     if not os.path.exists(INFILE):
         raise FileNotFoundError(f"Input file not found: {INFILE}")
 
@@ -81,8 +94,8 @@ if __name__ == '__main__':
     if start_row is None:
         raise RuntimeError('Could not find the data start row by year detection')
 
-    # Read the data starting from the detected row
-    # Use engine='python' to be permissive about inconsistent columns
+    # Read the data starting from the detected row.
+    # Use engine='python' to be permissive about inconsistent columns.
     df = pd.read_csv(INFILE, skiprows=start_row, header=None, encoding='utf-8', engine='python')
 
     # Trim or extend df columns to match the expected header length
@@ -112,11 +125,11 @@ if __name__ == '__main__':
         # Attempt numeric conversion
         df[col] = pd.to_numeric(df[col], errors='coerce')
 
-    # Replace missing Annual growth rate values with 0.05 (user-specified)
+    # Replace missing Annual growth rate values with 0.05 (dataset-specific convention).
     if 'Annual growth rate' in df.columns:
         df['Annual growth rate'] = df['Annual growth rate'].fillna(0.05)
 
-    # Optional: filter for 1999–2024 as in the prospectus / image
+    # Filter to the study window.
     df = df[(df['Year'] >= 1999) & (df['Year'] <= 2024)].copy()
 
     # Ensure output directory exists

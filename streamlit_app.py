@@ -28,8 +28,12 @@ project_root = Path(__file__).resolve().parent
 
 # Import choropleth builder (optional geospatial dependency)
 try:
-    from graphs.choropleth_builder import prepare_geospatial_data, build_choropleth_figure
-    CHOROPLETH_AVAILABLE = True
+    from graphs.choropleth_builder import (
+        GEO_DEPS_AVAILABLE,
+        prepare_geospatial_data,
+        build_choropleth_figure,
+    )
+    CHOROPLETH_AVAILABLE = bool(GEO_DEPS_AVAILABLE)
 except ImportError:
     CHOROPLETH_AVAILABLE = False
     st.warning("⚠️ Choropleth visualization not available. Please ensure geopandas and fiona are installed.")

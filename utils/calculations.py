@@ -11,6 +11,17 @@ import logging
 logger = logging.getLogger(__name__)
 
 def format_yoy_label(value, unit='', decimals=1, use_sign=False):
+    """Format a year-on-year delta value for UI display.
+
+    Args:
+        value: Delta value (percent or absolute) or None/NaN.
+        unit: Unit suffix to append (e.g., '%').
+        decimals: Number of decimal places.
+        use_sign: If True, use +/- prefix and Δ for zero. If False, use arrows.
+
+    Returns:
+        A short string label such as '+1.2%', '↓0.8', or 'YoY change'.
+    """
     try:
         if value is None or (isinstance(value, float) and pd.isna(value)):
             return "YoY change"
@@ -30,7 +41,14 @@ def format_yoy_label(value, unit='', decimals=1, use_sign=False):
         return "YoY change"
 
 def get_yoy_style(value):
-    """Return style dict for the YoY pill for MUI Typography"""
+    """Return the style dictionary for a YoY pill (Streamlit Elements / MUI).
+
+    Args:
+        value: Numeric delta value or None/NaN.
+
+    Returns:
+        Dict of CSS-like styles for MUI Typography.
+    """
     base = {"fontWeight": "700", "fontSize": "0.95rem", "padding": "4px 10px", "borderRadius": "18px", "display": "inline-block"}
     if value is None or (isinstance(value, float) and pd.isna(value)):
         base.update({"background": "rgba(240,240,240,0.4)", "color": "#555"})
@@ -43,7 +61,17 @@ def get_yoy_style(value):
     return base
 
 def compute_dependency_ratio(row):
-    """Compute total dependency ratio (0-14 & 65+) / 15-64 * 100"""
+    """Compute total dependency ratio for one row.
+
+    Dependency ratio is defined as:
+        $\frac{\text{(0–14) + (65+)}}{\text{(15–64)}} \times 100$
+
+    Args:
+        row: A mapping-like row (e.g., pandas Series).
+
+    Returns:
+        Dependency ratio as a float, or None when not computable.
+    """
     try:
         young = row.get('Below Age 15', 0) or 0
         old = row.get('Age 65 and above', 0) or 0
@@ -57,6 +85,16 @@ def compute_dependency_ratio(row):
         return None
 
 def compute_median_age(row):
+    """Approximate median age from aggregated age bands.
+
+    Uses linear interpolation within the age band containing the median.
+
+    Args:
+        row: A mapping-like row (e.g., pandas Series) with age-band counts.
+
+    Returns:
+        Median age estimate (years), rounded to 1 decimal, or None.
+    """
     try:
         bands = [
             (0, 14, row.get('Below Age 15', 0) or 0),
@@ -89,6 +127,14 @@ def compute_median_age(row):
         return None
 
 def compute_dependency_ratio_vectorized(df):
+    """Vectorized dependency ratio computation for a demographics dataframe.
+
+    Args:
+        df: Dataframe containing age-band columns.
+
+    Returns:
+        A pandas Series of dependency ratios.
+    """
     try:
         young = df['Below Age 15'].fillna(0)
         old = df['Age 65 and above'].fillna(0)
@@ -105,6 +151,19 @@ def compute_dependency_ratio_vectorized(df):
         return df.apply(compute_dependency_ratio, axis=1)
 
 def compute_median_age_vectorized(df):
+    """Row-wise median age estimate for a demographics dataframe.
+
+    Note:
+        This implementation iterates rows because the interpolation step is
+        band-dependent. It is wrapped in a try/except with a row-wise fallback
+        for robustness.
+
+    Args:
+        df: Dataframe containing age-band columns.
+
+    Returns:
+        A pandas Series of median age estimates.
+    """
     try:
         bands = [
             (0, 14, 'Below Age 15'),

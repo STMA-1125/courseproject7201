@@ -1,3 +1,11 @@
+"""Population pyramid figure builder.
+
+Reads preprocessed pyramid CSVs and builds an animated Plotly population pyramid
+for absolute values or percentages.
+"""
+
+from __future__ import annotations
+
 import os
 from typing import List, Tuple, Literal
 

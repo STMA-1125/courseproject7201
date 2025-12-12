@@ -1,9 +1,21 @@
-import streamlit as st
+"""Overview section.
+
+This section is the landing view of the Streamlit dashboard. It renders:
+    - headline KPIs with YoY deltas
+    - gender distribution snapshot
+    - optional regional choropleth (if geospatial deps + files exist)
+    - supporting charts for age composition and key demographic trends
+"""
+
+from __future__ import annotations
+
+import base64
+import os
+
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-import base64
-import os
+import streamlit as st
 from streamlit_elements import elements, mui, html
 
 from modules.ui_components import section_header, decorative_header
@@ -15,8 +27,30 @@ try:
 except ImportError:
     build_choropleth_figure = None
 
-def show_overview(selected_year, demographics, pyramid, pyramid_percent, regions_gdf, geojson, project_root, choropleth_available=False):
-    # Get current year data
+def show_overview(
+    selected_year: int,
+    demographics: pd.DataFrame,
+    pyramid: pd.DataFrame,
+    pyramid_percent: pd.DataFrame,
+    regions_gdf,
+    geojson,
+    project_root,
+    choropleth_available: bool = False,
+) -> None:
+    """Render the dashboard Overview section.
+
+    Args:
+        selected_year: Year selected in the sidebar.
+        demographics: Year-level demographics dataframe (processed).
+        pyramid: Pyramid dataframe with absolute values.
+        pyramid_percent: Pyramid dataframe with percent values.
+        regions_gdf: GeoDataFrame of regions (optional; may be None).
+        geojson: GeoJSON representation of regions (optional; may be None).
+        project_root: Project root path used to resolve assets (images/graphs).
+        choropleth_available: Whether the choropleth feature should be enabled.
+    """
+
+    # Current year row (assumes the caller validated `selected_year` exists).
     current_data = demographics[demographics['Year'] == selected_year].iloc[0]
 
     # Decorative header
@@ -266,6 +300,7 @@ def show_overview(selected_year, demographics, pyramid, pyramid_percent, regions
 
             # Toilet/restroom gender images (or fallback to emoji icons)
             def image_to_uri(path):
+                """Convert a local image file to a data URI for Plotly layout images."""
                 try:
                     with open(path, "rb") as f:
                         data = f.read()

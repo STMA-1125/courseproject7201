@@ -1,18 +1,19 @@
+"""Demographic trends figure builder.
+
+Provides `build_trends_figure(df=None)` which returns a Plotly figure for the main
+demographic trends view (indices + ratios) used by the Streamlit dashboard.
+
+This module is import-friendly (no Streamlit dependency). When run as a script it
+builds the figure for local preview.
+"""
+
+from __future__ import annotations
+
+import pandas as pd
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-import pandas as pd
 
-"""
-Module: Macao_Demographic_Trends
-
-Provides a reusable function `build_trends_figure(df=None)` that returns a Plotly Figure object
-for the main demographic trends analysis. This allows Streamlit to import and render the figure
-directly via `st.plotly_chart(fig)` rather than embedding a static HTML file.
-
-If executed directly, the script will save an HTML preview to `Macao_Demographic_Trends.html`.
-"""
-
-# Sample dataset used when a dataframe is not provided
+# Legacy sample dataset (kept as a reference snapshot).
 data = {
     'Year': [1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 
            2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024],
@@ -26,7 +27,12 @@ data = {
                 7.37, 7.34, 7.56, 8.02, 8.42, 8.98, 9.83, 10.55, 11.1, 11.89, 12.93, 12.18, 13.29, 13.98, 14.56]
 }
 
-def _default_df():
+def _default_df() -> pd.DataFrame:
+    """Load the processed demographics CSV and normalize column names.
+
+    Returns:
+        A dataframe with the derived columns required by `build_trends_figure`.
+    """
     df = pd.read_csv('data/processed/macao_demographics_1999_2024.csv')
     # Normalize columns
     df['Total_Population'] = df['Total population']
@@ -53,7 +59,7 @@ def build_trends_figure(df=None):
     Returns:
         plotly.graph_objects.Figure: An interactive Plotly figure.
     """
-    # Accept different column names from CSV by normalizing to expected keys
+    # Accept different column names from the processed CSV by normalizing to expected keys.
     if df is None:
         df = _default_df()
     else:

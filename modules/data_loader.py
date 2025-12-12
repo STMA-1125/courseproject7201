@@ -13,8 +13,8 @@ logger = logging.getLogger(__name__)
 
 # Import choropleth builder if available (optional geospatial dependency)
 try:
-    from graphs.choropleth_builder import prepare_geospatial_data, build_choropleth_figure
-    CHOROPLETH_AVAILABLE = True
+    from graphs.choropleth_builder import GEO_DEPS_AVAILABLE, prepare_geospatial_data
+    CHOROPLETH_AVAILABLE = bool(GEO_DEPS_AVAILABLE)
 except ImportError:
     CHOROPLETH_AVAILABLE = False
     logger.warning("Choropleth builder not available - geospatial dependencies may be missing")

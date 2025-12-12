@@ -1,13 +1,29 @@
+"""Demographic analysis section.
+
+Renders the long-term trends and age-structure analysis views.
+"""
+
+from __future__ import annotations
+
 import streamlit as st
-from pathlib import Path
-from typing import Optional
 
 from streamlit_elements import elements, mui, html
 
 from modules.ui_components import decorative_header
 
 
-def show_analysis(selected_year, project_root, demographics=None):
+def show_analysis(selected_year: int, project_root, demographics=None) -> None:
+    """Render the Demographic Analysis section.
+
+    Args:
+        selected_year: Currently selected year from the sidebar. This section
+            focuses on time series; the year is retained for consistent
+            navigation and potential future highlighting.
+        project_root: Absolute path to the project root folder.
+        demographics: Full demographics dataframe if available (preferred).
+            When not provided, the underlying graph modules will load the
+            processed CSV directly.
+    """
     decorative_header(
         "Demographic Analysis",
         "Population changes and demographic patterns over time",
@@ -62,14 +78,14 @@ def show_analysis(selected_year, project_root, demographics=None):
                 style={"padding": "16px", "background": "#f9f9f9", "borderRadius": "8px", "marginBottom": "24px", "border": "1px solid #e0e0e0"}
             )
         
-        # Try to import the trends module first and use a direct Plotly figure
+        # Prefer rendering a live Plotly figure; fall back to a pre-generated HTML artifact.
         try:
             from graphs.macao_demographic_trends import build_trends_figure
             # Build the figure using the main dataframe if available
             fig = build_trends_figure(demographics) if demographics is not None else build_trends_figure()
             st.plotly_chart(fig, width="stretch")
         except Exception:
-            # Fallback to embedding the pre-generated HTML if the module import or plotting fails
+            # Fallback: embed the pre-generated HTML if import/plotting fails.
             try:
                 candidates = [project_root / 'graphs' / 'Macao_Demographic_Trends.html', project_root / 'Macao_Demographic_Trends.html']
                 file_path = next((p for p in candidates if p.exists()), None)
@@ -122,7 +138,7 @@ def show_analysis(selected_year, project_root, demographics=None):
                 style={"padding": "16px", "background": "#f9f9f9", "borderRadius": "8px", "marginBottom": "24px", "border": "1px solid #e0e0e0"}
             )
         
-        # Try to render forecast from module first
+        # Prefer rendering a live Plotly figure; fall back to a pre-generated HTML artifact.
         try:
             from graphs.macao_demographic_trends_forecast import build_forecast_figure
             fig_forecast = build_forecast_figure(demographics) if demographics is not None else build_forecast_figure()

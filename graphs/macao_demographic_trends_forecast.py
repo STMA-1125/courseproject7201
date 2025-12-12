@@ -1,9 +1,20 @@
+"""Demographic forecast figure builder.
+
+Builds a Plotly figure projecting Macao's population and aging ratio through 2035
+under baseline/high/low scenarios.
+
+The forecast is intentionally simple (linear interpolation) and is designed for
+dashboard storytelling rather than formal demographic modeling.
+"""
+
+from __future__ import annotations
+
+import numpy as np
+import pandas as pd
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-import pandas as pd
-import numpy as np
 
-# Sample historical data for Macao from 1999 to 2024
+# Fallback historical series used when a dataframe is not provided.
 historical_years = list(range(1999, 2025))
 historical_data = {
     'Year': historical_years,
@@ -18,6 +29,7 @@ df_historical = pd.DataFrame(historical_data)
 future_years = list(range(2025, 2036))
 
 def generate_forecast_baseline(last_pop, last_aging):
+    """Baseline scenario: moderate growth with gradual aging."""
     pop_2035 = 720
     population = np.linspace(last_pop, pop_2035, len(future_years))
     aging_2035 = 18.0
@@ -25,6 +37,7 @@ def generate_forecast_baseline(last_pop, last_aging):
     return population, aging
 
 def generate_forecast_high(last_pop, last_aging):
+    """High-growth scenario: higher population with slower aging."""
     pop_2035 = 780
     population = np.linspace(last_pop, pop_2035, len(future_years))
     aging_2035 = 16.5
@@ -32,6 +45,7 @@ def generate_forecast_high(last_pop, last_aging):
     return population, aging
 
 def generate_forecast_low(last_pop, last_aging):
+    """Low-growth scenario: lower population with faster aging."""
     pop_2035 = 650
     population = np.linspace(last_pop, pop_2035, len(future_years))
     aging_2035 = 20.5
@@ -39,7 +53,17 @@ def generate_forecast_low(last_pop, last_aging):
     return population, aging
 
 def build_forecast_figure(df=None):
-    # Use the provided dataframe for historical data if present
+    """Build the forecast Plotly figure.
+
+    Args:
+        df: Optional processed demographics dataframe (preferred). When omitted,
+            the module loads `data/processed/macao_demographics_1999_2024.csv`.
+
+    Returns:
+        A Plotly figure with historical series and 2025–2035 scenario envelopes.
+    """
+
+    # Use the provided dataframe for historical data if present.
     if df is not None:
         hist_df = df.copy()
         # Normalize columns if necessary
@@ -60,7 +84,7 @@ def build_forecast_figure(df=None):
     last_pop = hist_df['Total_Population'].iloc[-1]
     last_aging = hist_df['Aging_Ratio'].iloc[-1]
 
-    # Generate forecasts for each scenario
+    # Generate scenario curves anchored at the last historical point.
     pop_baseline, aging_baseline = generate_forecast_baseline(last_pop, last_aging)
     pop_high, aging_high = generate_forecast_high(last_pop, last_aging)
     pop_low, aging_low = generate_forecast_low(last_pop, last_aging)
@@ -173,8 +197,14 @@ def build_forecast_figure(df=None):
     secondary_y=True,
 )
 
-    fig.add_vline(x=2024.5, line_width=2, line_dash="solid", 
-                  line_color=colors['baseline'], opacity=0.7)
+    # Visual boundary between historical and forecast segments.
+    fig.add_vline(
+        x=2024.5,
+        line_width=2,
+        line_dash="solid",
+        line_color=colors['baseline'],
+        opacity=0.7,
+    )
 
     fig.update_xaxes(
     title_text="Year",

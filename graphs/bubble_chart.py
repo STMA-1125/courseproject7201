@@ -1,22 +1,42 @@
-import plotly.graph_objects as go
-import numpy as np
-import pandas as pd
+"""Age-structure bubble chart.
+
+Creates a Plotly bubble chart summarizing Macao's demographic shift over time.
+
+Axes:
+    - x: elderly ratio minus children ratio (positive -> more aged)
+    - y: children ratio
+
+Bubble size encodes total population.
+"""
+
+from __future__ import annotations
+
 from pathlib import Path
 
-def create_bubble_chart():
-    # Load data
+import numpy as np
+import pandas as pd
+import plotly.graph_objects as go
+
+def create_bubble_chart() -> go.Figure:
+    """Build the age-structure bubble chart.
+
+    Returns:
+        A Plotly figure suitable for rendering in Streamlit via `st.plotly_chart`.
+
+    Raises:
+        FileNotFoundError: If the processed demographics CSV cannot be located.
+    """
+
+    # Support running from either project root or the `graphs/` directory.
     data_path = Path("data/processed/macao_demographics_1999_2024.csv")
-    
-    # Fallback if running from different directory
     if not data_path.exists():
         data_path = Path("../data/processed/macao_demographics_1999_2024.csv")
-    
     if not data_path.exists():
         raise FileNotFoundError(f"Could not find data file at {data_path}")
 
     df = pd.read_csv(data_path)
 
-    # Clean column names if necessary 
+    # Defensive cleanup for CSVs that may include trailing spaces.
     df.columns = df.columns.str.strip()
     
     # Calculate percentages
@@ -31,18 +51,21 @@ def create_bubble_chart():
     pop_min = pop_raw.min()
     pop_max = pop_raw.max()
     pop_norm = (pop_raw - pop_min) / (pop_max - pop_min)
-    size_power = 2.0  
-    min_diameter = 60  
-    desired_ratio = 1.6  
+    # Bubble size mapping
+    # - Use a power transform so differences are visible even in early years.
+    # - Calibrate so 2024 is ~desired_ratio times the 1999 bubble.
+    size_power = 2.0
+    min_diameter = 60
+    desired_ratio = 1.6
 
-    # Apply power transform to normalized pop values
+    # Apply power transform to normalized population.
     pop_norm_power = pop_norm ** size_power
 
-    # Values for 1999 and 2024 (should exist); use numeric Year values
+    # Anchor bubble scaling to the endpoints when present.
     s1 = pop_norm_power.loc[df['Year'] == 1999.0].values
     s2 = pop_norm_power.loc[df['Year'] == 2024.0].values
     if len(s1) == 0 or len(s2) == 0:
-        # fallback: ensure a sensible mapping if years are missing
+        # Fallback: use a simple linear mapping.
         max_diameter = min_diameter * desired_ratio
         size_pixels = min_diameter + pop_norm_power * (max_diameter - min_diameter)
     else:
@@ -79,7 +102,7 @@ def create_bubble_chart():
     # Create figure
     fig = go.Figure()
 
-    # Add scatter trace with bubble chart styling
+    # Main scatter trace.
     fig.add_trace(go.Scatter(
         x=df['Gap'],
         y=df['Children_Ratio'],
@@ -186,21 +209,18 @@ def create_bubble_chart():
 
 if __name__ == "__main__":
     fig = create_bubble_chart()
-    
-    # Save as HTML
-    # output_path = "graphs/bubble_chart_interactive.html"
-    # fig.write_html(output_path)
-    # print(f"Interactive bubble chart saved to: {output_path}")
-    
+
+    # Developer utility: recompute and print bubble sizes for endpoint sanity checks.
     import pandas as _pd
     df_local = _pd.read_csv("data/processed/macao_demographics_1999_2024.csv")
     df_local.columns = df_local.columns.str.strip()
-    # Recompute sizes using same logic to fetch the computed 'size_pixels'
+    # Recompute sizes using the same logic as `create_bubble_chart`.
     pop_raw = df_local['Total population']
     pop_min = pop_raw.min()
     pop_max = pop_raw.max()
     pop_norm = (pop_raw - pop_min) / (pop_max - pop_min)
     pop_norm_power = pop_norm ** 2.0
+    # Use a smaller baseline in debug mode for a compact printed range.
     min_diameter = 22
     desired_ratio = 1.6
     s1 = pop_norm_power.loc[df_local['Year'] == 1999.0].values
