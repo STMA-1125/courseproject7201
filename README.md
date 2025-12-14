@@ -36,7 +36,7 @@ An interactive Streamlit-based dashboard for analyzing and visualizing demograph
 
 ## Usage
 
-**Run the Streamlit application:**
+**Run the Streamlit application (local):**
 ```bash
 streamlit run streamlit_app.py
 ```
@@ -47,6 +47,14 @@ streamlit run streamlit_app.py
   - Overview
   - Population Pyramid
   - Demographic Analysis
+
+## Deployment
+The dashboard has been deployed to Streamlit Cloud for web access. Link: https://courseproject7201-groupbh.streamlit.app/
+
+**Hosted App Note:**
+- **Primary:** The main hosted app at https://courseproject7201-groupbh.streamlit.app/ is currently not working due to unexpected issues.
+- **Fallback:** We created a backup (fallback) hosted app; please use https://finalproject-groupbh.streamlit.app/ to access the live dashboard.
+   (the issues found on 13/12–14/12 haven't been resolved)
 
 ## Project Structure
 
