@@ -49,12 +49,12 @@ streamlit run streamlit_app.py
   - Demographic Analysis
 
 ## Deployment
-The dashboard has been deployed to Streamlit Cloud for web access. Link: https://courseproject7201-groupbh.streamlit.app/
+The dashboard has been deployed to Streamlit Cloud for web access: https://courseproject7201-groupbh.streamlit.app/
 
 **Hosted App Note:**
-- **Primary:** The main hosted app at https://courseproject7201-groupbh.streamlit.app/ is currently not working due to unexpected issues.
-- **Fallback:** We created a backup (fallback) hosted app; please use https://finalproject-groupbh.streamlit.app/ to access the live dashboard.
-   (the issues found on 13/12–14/12 haven't been resolved)
+During development, we've encountered some issues with the Streamlit Cloud deployment.
+- **Primary:** The main app at https://courseproject7201-groupbh.streamlit.app/ may not work due to unexpected issues.
+- **Fallback:** If the main app is not working, please use our fallback app at https://finalproject-groupbh.streamlit.app/.
 
 ## Project Structure
 
@@ -70,6 +70,8 @@ courseproject7201/
 │   │   ├── population_pyramid_data.csv
 │   │   └── population_pyramid_data_percentage.csv
 │   ├── raw/                  # Original datasets
+│   │   ├── dsec_dataset.csv                 # DSEC dataset
+│   │   ├── time-series_preprocessing.py     # Preprocessing script
 │   └── macao-shapefile/      # Geospatial files 
 │
 ├── modules/                   # Core modules
