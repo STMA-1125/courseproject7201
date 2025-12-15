@@ -16,7 +16,7 @@ An interactive Streamlit-based dashboard for analyzing and visualizing demograph
 1. **Clone this repository:**
    ```bash
    git clone <repository-url>
-   cd courseproject7201
+   cd GRP_BH
    ```
 
 2. **Create a virtual environment:**
@@ -59,7 +59,7 @@ During development, we've encountered some issues with the Streamlit Cloud deplo
 ## Project Structure
 
 ```
-courseproject7201/
+GRP_BH/
 ├── streamlit_app.py           # Main application entry point
 ├── config.py                  # Configuration (paths, colors, settings)
 ├── requirements.txt           # Python dependencies
@@ -109,8 +109,6 @@ courseproject7201/
 - **shapely**: Geometric operations
 - **fiona**: Geospatial file I/O
 - **pyproj**: Coordinate transformations
-- **folium**: Leaflet maps
-- **branca**: Color schemes for maps
 
 ### UI Components
 - **streamlit-elements**  Enhanced UI elements
