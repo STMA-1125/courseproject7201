@@ -16,7 +16,7 @@ An interactive Streamlit-based dashboard for analyzing and visualizing demograph
 1. **Clone this repository:**
    ```bash
    git clone <repository-url>
-   cd GRP_BH
+   cd grp_bh
    ```
 
 2. **Create a virtual environment:**
@@ -59,7 +59,7 @@ During development, we've encountered some issues with the Streamlit Cloud deplo
 ## Project Structure
 
 ```
-GRP_BH/
+grp_bh/
 ├── streamlit_app.py           # Main application entry point
 ├── config.py                  # Configuration (paths, colors, settings)
 ├── requirements.txt           # Python dependencies
